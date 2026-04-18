@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCC Payroll Report Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --navy-deep:#0b1526;--navy:#0d2247;--navy-mid:#1a3a6b;--navy-light:#eaecf5;
+  --navy-glow:rgba(13,34,71,.08);--silver:#8a9ab5;--silver-mid:#bcc7d8;
+  --silver-light:#dde3ef;--white:#ffffff;--charcoal:#1c2333;
+  --accent:#c8a94a;--accent-dark:#a8891a;--green:#1a7a45;--red:#c0392b;
+  --gray-50:#f6f8fb;--gray-100:#eef1f6;--gray-200:#dde3ed;--gray-500:#7a8fac;
+  --gray-700:#3a4d65;--gray-900:#111d30;
+  --shadow-sm:0 2px 8px rgba(13,34,71,.08),0 1px 2px rgba(0,0,0,.05);
+  --shadow:0 4px 20px rgba(13,34,71,.12),0 2px 6px rgba(0,0,0,.07);
+  --shadow-lg:0 12px 40px rgba(13,34,71,.18),0 4px 12px rgba(0,0,0,.1);
+  --shadow-card:0 6px 28px rgba(13,34,71,.10),0 1px 4px rgba(0,0,0,.06);
+  --radius:10px;--radius-sm:6px;--radius-lg:14px;
+  --grad-nav:linear-gradient(135deg,#0b1526 0%,#0d2247 60%,#1a3a6b 100%);
+  --grad-btn:linear-gradient(135deg,#0d2247 0%,#1a3a6b 100%);
+  --grad-header:linear-gradient(135deg,#0d2247 0%,#1a3a6b 100%);
+  --grad-accent:linear-gradient(135deg,#c8a94a 0%,#e0c060 100%);
+  --grad-page:linear-gradient(160deg,#f0f3fa 0%,#e6eaf5 100%);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--gray-900);background:var(--grad-page);min-height:100vh}
+/* NAV */
+#app-nav{background:var(--grad-nav);color:white;display:flex;align-items:center;padding:0 32px;height:64px;box-shadow:0 4px 24px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.06) inset;position:sticky;top:0;z-index:100;gap:0}
+.nav-logo-img{height:38px;width:auto;display:block;flex-shrink:0}
+.nav-appname{font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);flex-shrink:0}
+.nav-divider{width:1px;height:30px;background:rgba(255,255,255,.12);margin:0 22px;flex-shrink:0}
+.nav-tabs{display:flex;gap:4px;flex:1}
+.nav-tab{padding:7px 18px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:rgba(255,255,255,.5);border:none;background:transparent;letter-spacing:.3px;font-family:inherit;transition:all .18s;cursor:pointer}
+.nav-tab:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85)}
+.nav-tab.active{background:rgba(255,255,255,.13);color:white;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 8px rgba(0,0,0,.2)}
+.nav-right{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.5px;margin-left:auto;flex-shrink:0}
+/* LAYOUT */
+.page-wrap{padding:28px;max-width:1200px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+.view-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.view-title{font-size:20px;font-weight:700;color:var(--navy);letter-spacing:-.3px}
+.view-subtitle{font-size:12px;color:var(--gray-500);margin-top:2px}
+/* CARDS */
+.card{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(220,228,240,.6)}
+.card-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.card-title::after{content:'';flex:1;height:1.5px;background:linear-gradient(90deg,var(--silver-light),transparent)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;transition:all .18s ease}
+.btn-sm{padding:7px 14px;font-size:10px}
+.btn-lg{padding:14px 30px;font-size:13px}
+.btn-charcoal{background:linear-gradient(160deg,#2a3a55 0%,#1c2840 50%,#111d30 100%);color:rgba(140,165,210,.75);text-shadow:0 1px 0 rgba(255,255,255,.06),0 -1px 1px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4);box-shadow:0 3px 10px rgba(11,21,38,.6),inset 0 1px 0 rgba(255,255,255,.06),inset 0 -2px 5px rgba(0,0,0,.3)}
+.btn-charcoal:hover{color:rgba(180,205,240,.88);transform:translateY(-1px);box-shadow:0 5px 16px rgba(11,21,38,.6),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 5px rgba(0,0,0,.3)}
+.btn-gold{background:linear-gradient(160deg,#e0c060 0%,#c8a94a 45%,#a8880f 100%);color:rgba(50,32,0,.78);text-shadow:0 1px 0 rgba(255,230,140,.5),0 -1px 1px rgba(80,50,0,.45),0 2px 3px rgba(0,0,0,.2);box-shadow:0 3px 12px rgba(200,169,74,.45),inset 0 1px 0 rgba(255,255,255,.25),inset 0 -2px 4px rgba(100,70,0,.3)}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,169,74,.55),inset 0 1px 0 rgba(255,255,255,.3),inset 0 -2px 4px rgba(100,70,0,.3)}
+.btn-danger{background:linear-gradient(160deg,#c0392b 0%,#96281b 100%);color:rgba(255,200,195,.85);box-shadow:0 3px 10px rgba(150,40,27,.4),inset 0 1px 0 rgba(255,255,255,.1),inset 0 -2px 5px rgba(0,0,0,.2)}
+.btn-danger:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(150,40,27,.5)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+/* TABLES */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:var(--navy-light);padding:11px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy-mid);border-bottom:2px solid var(--silver-light)}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.data-table tr:hover td{background:var(--gray-50)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .actions{display:flex;gap:6px}
+/* FORMS */
+.form-grid{display:grid;gap:16px}
+.form-grid-2{grid-template-columns:1fr 1fr}
+.form-grid-3{grid-template-columns:1fr 1fr 1fr}
+.form-grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:10px;font-weight:700;color:var(--navy-mid);text-transform:uppercase;letter-spacing:.6px}
+.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1.5px solid var(--silver-light);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:white;box-shadow:0 1px 3px rgba(13,34,71,.05);transition:all .15s;width:100%}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(13,34,71,.1)}
+.form-group textarea{resize:vertical;min-height:70px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;padding:16px 0 8px}
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.badge-blue{background:var(--navy-light);color:var(--navy)}
+.badge-green{background:#e2f4ea;color:var(--green)}
+.badge-gray{background:var(--gray-200);color:var(--gray-700)}
+.badge-gold{background:#fef6e0;color:#7a5c00}
+/* MODALS */
+.modal-backdrop{position:fixed;inset:0;background:rgba(11,21,38,.55);backdrop-filter:blur(3px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.hidden{display:none}
+.modal-box{background:white;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:620px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-box.modal-sm{max-width:420px}
+.modal-box.modal-xl{max-width:900px}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-header h3{font-size:15px;font-weight:700;color:var(--navy)}
+.modal-close{background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray-500);padding:2px 6px;border-radius:4px;transition:all .15s}
+.modal-close:hover{background:var(--gray-100);color:var(--gray-900)}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--gray-100);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+/* TOAST */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:white;box-shadow:var(--shadow-lg);animation:slideIn .25s ease;display:flex;align-items:center;gap:10px;max-width:360px}
+.toast-success{background:var(--green)}
+.toast-error{background:var(--red)}
+.toast-info{background:var(--navy-mid)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+/* HOURS GRID */
+.emp-entry{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.emp-entry-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--navy-light);border-bottom:1px solid var(--silver-light)}
+.emp-entry-header select{flex:1;padding:7px 10px;border:1.5px solid var(--silver-light);border-radius:var(--radius-sm);font-size:13px;font-family:inherit}
+.emp-entry-body{padding:14px 16px}
+.hours-grid{width:100%;border-collapse:collapse;font-size:12px}
+.hours-grid th{background:var(--grad-header);color:white;padding:6px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.hours-grid td{padding:4px 6px;border-bottom:1px solid var(--gray-100);text-align:center;vertical-align:middle}
+.hours-grid td:first-child{text-align:left;font-weight:600;font-size:11px;color:var(--navy-mid);padding-left:8px;white-space:nowrap}
+.hours-grid input[type=number]{width:52px;padding:5px;text-align:center;border:1.5px solid var(--silver-light);border-radius:4px;font-size:12px;font-family:inherit}
+.hours-grid input[type=number]:focus{outline:none;border-color:var(--navy-mid)}
+.hours-total{font-weight:700;color:var(--navy);font-size:12px}
+.hours-calc{font-size:11px;color:var(--gray-700)}
+.emp-entry-footer{padding:10px 16px;background:white;border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:12px}
+.emp-entry-footer input{flex:1;padding:7px 10px;border:1.5px solid var(--silver-light);border-radius:var(--radius-sm);font-size:12px;font-family:inherit}
+.emp-entry-footer label{font-size:10px;font-weight:700;color:var(--navy-mid);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--gray-500);font-size:13px;gap:10px}
+.spinner{width:18px;height:18px;border:2px solid var(--gray-200);border-top-color:var(--navy-mid);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:48px 24px;color:var(--gray-500)}
+.empty-state h3{font-size:15px;font-weight:600;color:var(--gray-700);margin-bottom:6px}
+.empty-state p{font-size:13px}
+/* DIVIDER */
+.section-divider{height:1px;background:var(--gray-200);margin:20px 0}
+/* PREVIEW IFRAME */
+#preview-frame{width:100%;height:70vh;border:1px solid var(--gray-200);border-radius:var(--radius-sm)}
+/* PDF FORM STYLES */
+#pdf-wrapper{position:fixed;left:-9999px;top:0;z-index:-1;pointer-events:none}
+#pdf-page{width:816px;background:white;font-family:Arial,Helvetica,sans-serif;font-size:7.5px;color:#000;position:relative}
+.pdf-form{width:100%;border-collapse:collapse;table-layout:fixed}
+.pdf-form td,.pdf-form th{border:1px solid #000;padding:2px 3px;vertical-align:top;overflow:hidden;line-height:1.3}
+.pdf-form td.no-border{border:none}
+.pdf-form td.bb{border-bottom:1px solid #000;border-top:none;border-left:none;border-right:none}
+.pdf-hdr-label{font-size:7px;font-weight:bold;text-transform:uppercase}
+.pdf-hdr-val{font-size:8px}
+.pdf-title{font-size:10px;font-weight:bold;text-align:center;text-transform:uppercase}
+.pdf-section-hdr{font-size:7px;font-weight:bold;text-transform:uppercase;color:#000}
+.pdf-col-hdr{font-size:6.5px;font-weight:bold;text-align:center;text-transform:uppercase;vertical-align:middle!important;padding:2px 1px!important}
+.pdf-emp-name{font-size:7.5px;font-weight:bold}
+.pdf-emp-addr{font-size:7px}
+.pdf-emp-ssn{font-size:7px;font-style:italic}
+.pdf-emp-data{text-align:center;font-size:7.5px}
+.pdf-cert{font-size:6.5px;line-height:1.6}
+.pdf-sig-label{font-size:7px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="app-nav">
+  <img class="nav-logo-img" src="mico-logo.png" alt="MICO Cooling Corp" onerror="this.style.display='none'">
+  <div class="nav-divider"></div>
+  <span class="nav-appname">Payroll Report Generator</span>
+  <div class="nav-divider"></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('reports')">Reports</button>
+    <button class="nav-tab" onclick="showView('employees')">Employees</button>
+    <button class="nav-tab" onclick="showView('contracts')">Contracts</button>
+  </div>
+  <div class="nav-right">v1.0</div>
+</nav>
+
+<div id="main-content">
+
+<!-- VIEW: REPORTS -->
+<div id="view-reports" class="view active page-wrap">
+  <div class="view-header">
+    <div>
+      <div class="view-title">Payroll Reports</div>
+      <div class="view-subtitle">Weekly certified payroll submissions</div>
+    </div>
+    <button class="btn btn-gold" onclick="openReportForm()">+ New Report</button>
+  </div>
+  <div class="card">
+    <div class="card-title">All Reports</div>
+    <div id="reports-container"><div class="loading"><div class="spinner"></div> Loading reports...</div></div>
+  </div>
+</div>
+
+<!-- VIEW: REPORT FORM -->
+<div id="view-report-form" class="view page-wrap">
+  <div class="view-header">
+    <div>
+      <div class="view-title" id="report-form-title">New Report</div>
+      <div class="view-subtitle">Enter weekly payroll data</div>
+    </div>
+    <button class="btn btn-charcoal btn-sm" onclick="showView('reports')">&#8592; Back to Reports</button>
+  </div>
+
+  <!-- Report Info -->
+  <div class="card">
+    <div class="card-title">Report Information</div>
+    <div class="form-grid form-grid-2" style="margin-bottom:16px">
+      <div class="form-group">
+        <label>Contract / Agency *</label>
+        <select id="rf-contract" onchange="onContractChange()">
+          <option value="">-- Select Contract --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Base Invoice Number *</label>
+        <input type="text" id="rf-invoice" placeholder="e.g. 246325">
+      </div>
+    </div>
+    <div class="form-grid form-grid-3" style="margin-bottom:16px">
+      <div class="form-group">
+        <label>Date From *</label>
+        <input type="date" id="rf-date-from" onchange="refreshDateGrid()">
+      </div>
+      <div class="form-group">
+        <label>Date To *</label>
+        <input type="date" id="rf-date-to" onchange="refreshDateGrid()">
+      </div>
+      <div class="form-group">
+        <label>Report Status</label>
+        <select id="rf-status">
+          <option value="draft">Draft</option>
+          <option value="final">Final</option>
+        </select>
+      </div>
+    </div>
+    <div id="rf-week-summary" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--navy-light);border-radius:var(--radius-sm);font-size:12px;color:var(--navy-mid)"></div>
+    <div id="rf-contract-preview" style="display:none;margin-top:4px;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);border:1px solid var(--gray-200);font-size:12px;color:var(--gray-700)"></div>
+  </div>
+
+  <!-- Employees -->
+  <div class="card">
+    <div class="card-title">Employee Hours</div>
+    <div id="rf-employees-list"></div>
+    <button class="btn btn-charcoal btn-sm" onclick="addEmployeeEntry()" style="margin-top:8px">+ Add Employee</button>
+  </div>
+
+  <!-- Actions -->
+  <div class="form-actions">
+    <button class="btn btn-charcoal" onclick="showView('reports')">Cancel</button>
+    <button class="btn btn-charcoal" onclick="saveReport()">Save Report</button>
+    <button class="btn btn-charcoal" onclick="previewReport()" id="btn-preview" disabled>Preview PDF</button>
+    <button class="btn btn-gold" onclick="exportReport()" id="btn-export" disabled>Export PDF</button>
+  </div>
+</div>
+
+<!-- VIEW: EMPLOYEES -->
+<div id="view-employees" class="view page-wrap">
+  <div class="view-header">
+    <div>
+      <div class="view-title">Employee Roster</div>
+      <div class="view-subtitle">Manage employee records</div>
+    </div>
+    <button class="btn btn-gold" onclick="openEmployeeModal()">+ Add Employee</button>
+  </div>
+  <div class="card">
+    <div class="card-title">All Employees</div>
+    <div id="employees-container"><div class="loading"><div class="spinner"></div> Loading...</div></div>
+  </div>
+</div>
+
+<!-- VIEW: CONTRACTS -->
+<div id="view-contracts" class="view page-wrap">
+  <div class="view-header">
+    <div>
+      <div class="view-title">Contracts</div>
+      <div class="view-subtitle">Agency and contract information</div>
+    </div>
+    <button class="btn btn-gold" onclick="openContractModal()">+ Add Contract</button>
+  </div>
+  <div class="card">
+    <div class="card-title">All Contracts</div>
+    <div id="contracts-container"><div class="loading"><div class="spinner"></div> Loading...</div></div>
+  </div>
+</div>
+
+</div><!-- /main-content -->
+
+<!-- MODAL: EMPLOYEE -->
+<div id="modal-employee" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-emp-title">Add Employee</h3>
+      <button class="modal-close" onclick="closeModal('modal-employee')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="emp-id">
+      <div class="form-grid form-grid-2" style="margin-bottom:14px">
+        <div class="form-group"><label>Last Name *</label><input type="text" id="emp-last-name" placeholder="Hernandez"></div>
+        <div class="form-group"><label>First Name *</label><input type="text" id="emp-first-name" placeholder="Edwin"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Address</label><input type="text" id="emp-address" placeholder="City, State">
+      </div>
+      <div class="form-grid form-grid-3" style="margin-bottom:14px">
+        <div class="form-group"><label>Social Security #</label><input type="text" id="emp-ssn" placeholder="XXX-XX-XXXX"></div>
+        <div class="form-group"><label>Race</label>
+          <select id="emp-race">
+            <option value="">-- Select --</option>
+            <option>Hispanic</option><option>White</option><option>Black</option>
+            <option>Asian</option><option>Native American</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Gender</label>
+          <select id="emp-gender">
+            <option value="">-- Select --</option>
+            <option>MALE</option><option>FEMALE</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid form-grid-2" style="margin-bottom:14px">
+        <div class="form-group"><label>Classification</label>
+          <select id="emp-classification">
+            <option value="J">J - Journeyman</option>
+            <option value="A">A - Apprentice</option>
+            <option value="H">H - Helper</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Class Code (Union)</label>
+          <select id="emp-class-code">
+            <option value="J">J</option><option value="4Y">4Y</option>
+            <option value="3Y">3Y</option><option value="2Y">2Y</option>
+            <option value="1Y2">1Y2</option><option value="1Y1">1Y1</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Trade</label><input type="text" id="emp-trade" placeholder="e.g. Steamfitter Ref-A/C">
+      </div>
+      <div class="form-grid form-grid-4">
+        <div class="form-group"><label>RT Rate/Hr ($)</label><input type="number" id="emp-rt-rate" step="0.001" placeholder="47.850"></div>
+        <div class="form-group"><label>RT Benefit/Hr ($)</label><input type="number" id="emp-rt-benefit" step="0.001" placeholder="24.16"></div>
+        <div class="form-group"><label>OT Rate/Hr ($)</label><input type="number" id="emp-ot-rate" step="0.001" placeholder="71.775"></div>
+        <div class="form-group"><label>OT Benefit/Hr ($)</label><input type="number" id="emp-ot-benefit" step="0.001" placeholder="20.65"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-charcoal btn-sm" onclick="closeModal('modal-employee')">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveEmployee()">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONTRACT -->
+<div id="modal-contract" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-con-title">Add Contract</h3>
+      <button class="modal-close" onclick="closeModal('modal-contract')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="con-id">
+      <div class="form-grid form-grid-2" style="margin-bottom:14px">
+        <div class="form-group"><label>Agency *</label><input type="text" id="con-agency" placeholder="NYC-HHC"></div>
+        <div class="form-group"><label>Customer ID</label><input type="text" id="con-customer-id" placeholder="ACD-5342"></div>
+      </div>
+      <div class="form-grid form-grid-2" style="margin-bottom:14px">
+        <div class="form-group"><label>Contract Number *</label><input type="text" id="con-contract-number" placeholder="COF0020710"></div>
+        <div class="form-group"><label>Facility *</label><input type="text" id="con-facility" placeholder="BELLEVUE"></div>
+      </div>
+      <div class="form-grid form-grid-2" style="margin-bottom:14px">
+        <div class="form-group"><label>Project Title</label><input type="text" id="con-project-title" placeholder="Project name"></div>
+        <div class="form-group"><label>Project Number</label><input type="text" id="con-project-number" placeholder="Project #"></div>
+      </div>
+      <div class="form-grid form-grid-2" style="margin-bottom:14px">
+        <div class="form-group"><label>Contractor Name</label><input type="text" id="con-contractor-name" value="Mico Cooling Corp."></div>
+        <div class="form-group"><label>Contractor Address</label><input type="text" id="con-contractor-address" value="30 Ramland Road, Suite 103, Orangeburg NY 10962"></div>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="con-active" checked style="width:auto;margin-right:6px">Active Contract</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-charcoal btn-sm" onclick="closeModal('modal-contract')">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveContract()">Save Contract</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRM DELETE -->
+<div id="modal-delete" class="modal-backdrop hidden">
+  <div class="modal-box modal-sm">
+    <div class="modal-header"><h3>Confirm Delete</h3><button class="modal-close" onclick="closeModal('modal-delete')">&times;</button></div>
+    <div class="modal-body"><p id="delete-msg" style="font-size:13px;color:var(--gray-700)">Are you sure?</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-charcoal btn-sm" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="delete-confirm-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PREVIEW -->
+<div id="modal-preview" class="modal-backdrop hidden">
+  <div class="modal-box modal-xl">
+    <div class="modal-header">
+      <h3>PDF Preview</h3>
+      <button class="modal-close" onclick="closeModal('modal-preview')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <div id="preview-pages"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-charcoal btn-sm" onclick="closeModal('modal-preview')">Close</button>
+      <button class="btn btn-gold btn-sm" id="preview-export-btn" onclick="exportCurrentReport()">Export PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF TEMPLATE (off-screen) -->
+<div id="pdf-wrapper">
+  <div id="pdf-page"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script>
+const SUPABASE_URL = 'https://tejtfoubmfdcdznyfdio.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlanRmb3VibWZkY2R6bnlmZGlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDExOTYsImV4cCI6MjA5MjAxNzE5Nn0.593tO5wI1xjkRHo0-wFd6iC0UgSD8WroCTdJH3wDe7k';
+
+let db;
+let state = {
+  employees: [], contracts: [], reports: [],
+  currentReportId: null, currentBatchIds: [],
+  currentView: 'reports', entryCount: 0, pendingDelete: null
+};
+
+// ===================== INIT =====================
+async function init() {
+  const { createClient } = supabase;
+  db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  await Promise.all([loadEmployees(), loadContracts()]);
+  await loadReports();
+  showView('reports');
+}
+
+// ===================== NAV =====================
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const viewEl = document.getElementById('view-' + name);
+  if(viewEl) viewEl.classList.add('active');
+  const tabs = {reports:0, employees:1, contracts:2, 'report-form':0};
+  const idx = tabs[name];
+  if(idx !== undefined) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+  state.currentView = name;
+}
+
+// ===================== TOAST =====================
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ===================== MODAL =====================
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+
+// ===================== DATA =====================
+async function loadEmployees() {
+  const { data, error } = await db.from('employees').select('*').order('last_name');
+  if(error) { toast('Error loading employees: ' + error.message, 'error'); return; }
+  state.employees = data || [];
+}
+async function loadContracts() {
+  const { data, error } = await db.from('contracts').select('*').order('agency');
+  if(error) { toast('Error loading contracts: ' + error.message, 'error'); return; }
+  state.contracts = data || [];
+}
+async function loadReports() {
+  const { data, error } = await db.from('payroll_reports')
+    .select('*, contracts(agency, facility, contract_number)')
+    .order('week_ending', {ascending: false});
+  if(error) { toast('Error loading reports: ' + error.message, 'error'); return; }
+  state.reports = data || [];
+  renderReports();
+}
+async function loadEntries(reportId) {
+  const { data, error } = await db.from('payroll_entries')
+    .select('*, employees(*)').eq('report_id', reportId).order('sort_order');
+  if(error) { toast('Error loading entries: ' + error.message, 'error'); return []; }
+  return data || [];
+}
+
+// ===================== DATE UTILITIES =====================
+function getDatesInRange(fromStr, toStr) {
+  if(!fromStr || !toStr) return [];
+  const dates = [];
+  const from = new Date(fromStr + 'T00:00:00');
+  const to   = new Date(toStr   + 'T00:00:00');
+  if(from > to) return [];
+  for(let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+    dates.push(new Date(d));
+  }
+  return dates;
+}
+function getWeekEndingFriday(date) {
+  const d = new Date(date);
+  const daysToFri = (5 - d.getDay() + 7) % 7;
+  const fri = new Date(d);
+  fri.setDate(d.getDate() + daysToFri);
+  return fri;
+}
+function groupDatesByWeek(dates) {
+  const weeks = {}, order = [];
+  dates.forEach(date => {
+    const fri = getWeekEndingFriday(date);
+    const key = toDateStr(fri);
+    if(!weeks[key]) { weeks[key] = { friday: fri, dates: [] }; order.push(key); }
+    weeks[key].dates.push(date);
+  });
+  return order.map(k => weeks[k]);
+}
+function dateToDayField(date) {
+  return ['sun','mon','tue','wed','thu','fri','sat'][date.getDay()];
+}
+function toDateStr(d) { return d.toISOString().split('T')[0]; }
+function shortFmt(d)  { return `${d.getMonth()+1}/${d.getDate()}`; }
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// ===================== REPORTS VIEW =====================
+function renderReports() {
+  const container = document.getElementById('reports-container');
+  if(!state.reports.length) {
+    container.innerHTML = '<div class="empty-state"><h3>No reports yet</h3><p>Click &ldquo;New Report&rdquo; to create your first payroll report.</p></div>';
+    return;
+  }
+  const rows = state.reports.map(r => {
+    const c = r.contracts || {};
+    const badge = r.status === 'final'
+      ? '<span class="badge badge-green">Final</span>'
+      : '<span class="badge badge-gray">Draft</span>';
+    return `<tr>
+      <td><strong>${r.invoice_number}</strong></td>
+      <td>${fmtDate(r.week_ending)}</td>
+      <td>${c.agency||'—'}</td>
+      <td>${c.facility||'—'}</td>
+      <td>${c.contract_number||'—'}</td>
+      <td>${badge}</td>
+      <td><div class="actions">
+        <button class="btn btn-charcoal btn-sm" onclick="editReport('${r.id}')">Edit</button>
+        <button class="btn btn-charcoal btn-sm" onclick="previewReportById('${r.id}')">Preview</button>
+        <button class="btn btn-charcoal btn-sm" onclick="exportReportById('${r.id}')">Export PDF</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('report','${r.id}','invoice #${r.invoice_number}')">Delete</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>Invoice #</th><th>Week Ending</th><th>Agency</th><th>Facility</th>
+      <th>Contract #</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ===================== REPORT FORM =====================
+function openReportForm(reportId) {
+  state.currentReportId = reportId || null;
+  state.currentBatchIds = reportId ? [reportId] : [];
+  document.getElementById('report-form-title').textContent = reportId ? 'Edit Report' : 'New Report';
+  document.getElementById('btn-preview').disabled = !reportId;
+  document.getElementById('btn-export').disabled = !reportId;
+  document.getElementById('btn-export').textContent = 'Export PDF';
+  document.getElementById('btn-preview').textContent = 'Preview PDF';
+  document.getElementById('rf-contract').value = '';
+  document.getElementById('rf-invoice').value = '';
+  document.getElementById('rf-date-from').value = '';
+  document.getElementById('rf-date-to').value = '';
+  document.getElementById('rf-status').value = 'draft';
+  document.getElementById('rf-week-summary').style.display = 'none';
+  document.getElementById('rf-contract-preview').style.display = 'none';
+  document.getElementById('rf-employees-list').innerHTML = '';
+  state.entryCount = 0;
+  const sel = document.getElementById('rf-contract');
+  sel.innerHTML = '<option value="">-- Select Contract --</option>';
+  state.contracts.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${c.agency} — ${c.facility} (${c.contract_number})`;
+    sel.appendChild(opt);
+  });
+  showView('report-form');
+}
+
+async function editReport(id) {
+  openReportForm(id);
+  const report = state.reports.find(r => r.id === id);
+  if(report) {
+    document.getElementById('rf-contract').value = report.contract_id || '';
+    const baseInvoice = report.invoice_number.replace(/-\d+$/, '');
+    document.getElementById('rf-invoice').value = baseInvoice;
+    document.getElementById('rf-status').value = report.status || 'draft';
+    // Set date range to the week (SAT–FRI)
+    const friday = new Date(report.week_ending + 'T00:00:00');
+    const saturday = new Date(friday); saturday.setDate(friday.getDate() - 6);
+    document.getElementById('rf-date-from').value = toDateStr(saturday);
+    document.getElementById('rf-date-to').value = toDateStr(friday);
+    onContractChange();
+    refreshDateGrid();
+    document.getElementById('btn-preview').disabled = false;
+    document.getElementById('btn-export').disabled = false;
+  }
+  // Load existing entries and convert day-of-week → date keyed hours
+  const entries = await loadEntries(id);
+  if(report) {
+    const friday = new Date(report.week_ending + 'T00:00:00');
+    const dayDates = {
+      sat: new Date(friday.getTime() - 6*86400000),
+      sun: new Date(friday.getTime() - 5*86400000),
+      mon: new Date(friday.getTime() - 4*86400000),
+      tue: new Date(friday.getTime() - 3*86400000),
+      wed: new Date(friday.getTime() - 2*86400000),
+      thu: new Date(friday.getTime() - 1*86400000),
+      fri: friday
+    };
+    entries.forEach(entry => {
+      const hoursMap = {};
+      ['sat','sun','mon','tue','wed','thu','fri'].forEach(day => {
+        const rt = parseFloat(entry[day+'_rt'] || 0);
+        const ot = parseFloat(entry[day+'_ot'] || 0);
+        if(rt || ot) {
+          const ds = toDateStr(dayDates[day]);
+          hoursMap[ds] = { rt: rt || '', ot: ot || '' };
+        }
+      });
+      addEmployeeEntry(entry, hoursMap);
+    });
+  }
+}
+
+function onContractChange() {
+  const id = document.getElementById('rf-contract').value;
+  const c = state.contracts.find(x => x.id === id);
+  const preview = document.getElementById('rf-contract-preview');
+  if(c) {
+    preview.style.display = 'block';
+    preview.innerHTML = `<strong>${c.agency}</strong> &mdash; ${c.facility} &nbsp;|&nbsp; Contract: ${c.contract_number} &nbsp;|&nbsp; ${c.contractor_name||'Mico Cooling Corp.'}`;
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// ===================== DATE GRID =====================
+function refreshDateGrid() {
+  const fromStr = document.getElementById('rf-date-from')?.value;
+  const toStr   = document.getElementById('rf-date-to')?.value;
+  const dates   = getDatesInRange(fromStr, toStr);
+  const weeks   = groupDatesByWeek(dates);
+  const summary = document.getElementById('rf-week-summary');
+  if(dates.length && weeks.length) {
+    summary.style.display = 'block';
+    const weekList = weeks.map((w,i) =>
+      `<strong>Week ${i+1}:</strong> ends ${fmtDate(toDateStr(w.friday))} (${w.dates.length} day${w.dates.length>1?'s':''})`
+    ).join(' &nbsp;&bull;&nbsp; ');
+    summary.innerHTML = `${weeks.length} week${weeks.length>1?'s':''} detected &mdash; ${weekList}`;
+  } else {
+    summary.style.display = 'none';
+  }
+  // Rebuild each employee's date grid (preserve entered values)
+  for(let idx = 0; idx < state.entryCount; idx++) {
+    if(!document.getElementById('emp-entry-'+idx)) continue;
+    const existing = collectEntryHours(idx);
+    buildDateColumns(idx, existing);
+  }
+}
+
+function collectEntryHours(idx) {
+  const map = {};
+  document.querySelectorAll(`[id^="h-rt-${idx}-"]`).forEach(inp => {
+    const ds = inp.id.slice(`h-rt-${idx}-`.length);
+    if(!map[ds]) map[ds] = {};
+    map[ds].rt = parseFloat(inp.value) || 0;
+  });
+  document.querySelectorAll(`[id^="h-ot-${idx}-"]`).forEach(inp => {
+    const ds = inp.id.slice(`h-ot-${idx}-`.length);
+    if(!map[ds]) map[ds] = {};
+    map[ds].ot = parseFloat(inp.value) || 0;
+  });
+  return map;
+}
+
+function buildDateColumns(idx, hoursMap) {
+  const fromStr = document.getElementById('rf-date-from')?.value;
+  const toStr   = document.getElementById('rf-date-to')?.value;
+  const dates   = getDatesInRange(fromStr, toStr);
+  const weeks   = groupDatesByWeek(dates);
+  const head    = document.getElementById('grid-head-'+idx);
+  const rtRow   = document.getElementById('grid-rt-'+idx);
+  const otRow   = document.getElementById('grid-ot-'+idx);
+  if(!head || !rtRow || !otRow) return;
+  // Clear existing columns (keep first label cell)
+  while(head.children.length > 0) head.removeChild(head.lastChild);
+  while(rtRow.children.length > 1) rtRow.removeChild(rtRow.lastChild);
+  while(otRow.children.length > 1) otRow.removeChild(otRow.lastChild);
+  // Type header
+  const typeHdr = document.createElement('th');
+  typeHdr.style.cssText = 'width:110px;text-align:left;padding:6px 8px';
+  head.appendChild(typeHdr);
+  if(!dates.length) {
+    const ph = document.createElement('th');
+    ph.textContent = 'Select a date range above to enter hours';
+    ph.style.cssText = 'color:var(--gray-500);font-weight:400;font-style:italic;font-size:11px;text-align:left';
+    head.appendChild(ph);
+    return;
+  }
+  weeks.forEach((week, wi) => {
+    week.dates.forEach((date, di) => {
+      const ds  = toDateStr(date);
+      const isFirstOfWeek = di === 0 && wi > 0;
+      const borderL = isFirstOfWeek ? 'border-left:2px solid var(--navy-mid)' : '';
+      // Header cell
+      const th = document.createElement('th');
+      th.innerHTML = `${shortFmt(date)}<br><span style="font-weight:400;font-size:9px">${DAY_SHORT[date.getDay()]}</span>`;
+      th.style.cssText = `min-width:52px;text-align:center;${isFirstOfWeek?'border-left:2px solid rgba(255,255,255,0.4)':''}`;
+      head.appendChild(th);
+      // RT cell
+      const rtVal = hoursMap && hoursMap[ds] ? (hoursMap[ds].rt || '') : '';
+      const rtTd = document.createElement('td');
+      rtTd.style.cssText = `text-align:center;padding:3px 2px;${borderL}`;
+      rtTd.innerHTML = `<input type="number" id="h-rt-${idx}-${ds}" min="0" max="24" step="0.5" value="${rtVal}" oninput="calcDateTotals(${idx})" style="width:48px;padding:4px;text-align:center;border:1.5px solid var(--silver-light);border-radius:4px;font-size:12px;font-family:inherit">`;
+      rtRow.appendChild(rtTd);
+      // OT cell
+      const otVal = hoursMap && hoursMap[ds] ? (hoursMap[ds].ot || '') : '';
+      const otTd = document.createElement('td');
+      otTd.style.cssText = `text-align:center;padding:3px 2px;${borderL}`;
+      otTd.innerHTML = `<input type="number" id="h-ot-${idx}-${ds}" min="0" max="24" step="0.5" value="${otVal}" oninput="calcDateTotals(${idx})" style="width:48px;padding:4px;text-align:center;border:1.5px solid var(--silver-light);border-radius:4px;font-size:12px;font-family:inherit">`;
+      otRow.appendChild(otTd);
+    });
+    // Week total column
+    const wkTh = document.createElement('th');
+    wkTh.innerHTML = `Wk ${wi+1}<br><span style="font-weight:400;font-size:9px">ends ${shortFmt(week.friday)}</span>`;
+    wkTh.style.cssText = 'min-width:58px;text-align:center;background:rgba(200,169,74,0.18);border-left:1px solid rgba(200,169,74,0.5)';
+    head.appendChild(wkTh);
+    const rtWk = document.createElement('td');
+    rtWk.id = `wk-rt-${idx}-${wi}`;
+    rtWk.style.cssText = 'text-align:center;font-weight:700;font-size:12px;color:var(--navy);background:rgba(200,169,74,0.06);border-left:1px solid rgba(200,169,74,0.3)';
+    rtRow.appendChild(rtWk);
+    const otWk = document.createElement('td');
+    otWk.id = `wk-ot-${idx}-${wi}`;
+    otWk.style.cssText = 'text-align:center;font-weight:700;font-size:12px;color:var(--accent-dark);background:rgba(200,169,74,0.06);border-left:1px solid rgba(200,169,74,0.3)';
+    otRow.appendChild(otWk);
+  });
+  calcDateTotals(idx);
+}
+
+function calcDateTotals(idx) {
+  const fromStr = document.getElementById('rf-date-from')?.value;
+  const toStr   = document.getElementById('rf-date-to')?.value;
+  const weeks   = groupDatesByWeek(getDatesInRange(fromStr, toStr));
+  weeks.forEach((week, wi) => {
+    let rt = 0, ot = 0;
+    week.dates.forEach(date => {
+      const ds = toDateStr(date);
+      rt += parseFloat(document.getElementById(`h-rt-${idx}-${ds}`)?.value || 0);
+      ot += parseFloat(document.getElementById(`h-ot-${idx}-${ds}`)?.value || 0);
+    });
+    const rtEl = document.getElementById(`wk-rt-${idx}-${wi}`);
+    const otEl = document.getElementById(`wk-ot-${idx}-${wi}`);
+    if(rtEl) rtEl.textContent = rt || '';
+    if(otEl) otEl.textContent = ot || '';
+  });
+}
+
+// ===================== EMPLOYEE ENTRIES =====================
+function addEmployeeEntry(existingEntry, existingHoursMap) {
+  const idx = state.entryCount++;
+  const e   = existingEntry || {};
+  const empId = e.employee_id || '';
+  const empOptions = state.employees.map(em =>
+    `<option value="${em.id}" ${em.id===empId?'selected':''}>${em.last_name}, ${em.first_name} (${em.trade||em.class_code})</option>`
+  ).join('');
+  const html = `<div class="emp-entry" id="emp-entry-${idx}">
+    <div class="emp-entry-header">
+      <select id="emp-sel-${idx}" onchange="updateEmpRates(${idx})">
+        <option value="">-- Select Employee --</option>
+        ${empOptions}
+      </select>
+      <span id="emp-rates-${idx}" style="font-size:11px;color:var(--gray-700)"></span>
+      <button class="btn btn-danger btn-sm" onclick="removeEmpEntry(${idx})">Remove</button>
+    </div>
+    <div style="overflow-x:auto;margin:0">
+      <table class="hours-grid" id="hours-grid-${idx}" style="min-width:300px">
+        <thead><tr id="grid-head-${idx}"></tr></thead>
+        <tbody>
+          <tr id="grid-rt-${idx}">
+            <td style="padding:5px 8px;font-weight:700;font-size:11px;color:var(--navy-mid);white-space:nowrap;width:110px">Regular Time</td>
+          </tr>
+          <tr id="grid-ot-${idx}">
+            <td style="padding:5px 8px;font-weight:700;font-size:11px;color:var(--accent-dark);white-space:nowrap;width:110px">Overtime</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="emp-entry-footer">
+      <label>Comments:</label>
+      <input type="text" id="emp-comments-${idx}" placeholder="e.g. X-638" value="${e.comments||''}">
+    </div>
+  </div>`;
+  document.getElementById('rf-employees-list').insertAdjacentHTML('beforeend', html);
+  if(empId) updateEmpRates(idx);
+  buildDateColumns(idx, existingHoursMap || null);
+}
+
+function removeEmpEntry(idx) { document.getElementById('emp-entry-'+idx)?.remove(); }
+
+function updateEmpRates(idx) {
+  const empId = document.getElementById('emp-sel-'+idx)?.value;
+  const emp   = state.employees.find(e => e.id === empId);
+  const span  = document.getElementById('emp-rates-'+idx);
+  if(emp && span) {
+    span.textContent = `RT: $${emp.rt_rate}/hr  OT: $${emp.ot_rate}/hr  Benefits RT: $${emp.rt_benefit}  OT: $${emp.ot_benefit}`;
+  } else if(span) { span.textContent = ''; }
+}
+
+function collectEntries() {
+  const entries = [];
+  for(let idx = 0; idx < state.entryCount; idx++) {
+    if(!document.getElementById('emp-entry-'+idx)) continue;
+    const empId = document.getElementById('emp-sel-'+idx)?.value;
+    if(!empId) continue;
+    entries.push({
+      employee_id: empId,
+      hoursMap: collectEntryHours(idx),
+      comments: document.getElementById('emp-comments-'+idx)?.value || '',
+      sort_order: entries.length
+    });
+  }
+  return entries;
+}
+
+// ===================== SAVE REPORT =====================
+async function saveReport() {
+  const contractId  = document.getElementById('rf-contract').value;
+  const invoice     = document.getElementById('rf-invoice').value.trim();
+  const dateFrom    = document.getElementById('rf-date-from').value;
+  const dateTo      = document.getElementById('rf-date-to').value;
+  const status      = document.getElementById('rf-status').value;
+  if(!contractId)           { toast('Please select a contract','error'); return; }
+  if(!invoice)              { toast('Please enter an invoice number','error'); return; }
+  if(!dateFrom || !dateTo)  { toast('Please enter a date range','error'); return; }
+  const dates = getDatesInRange(dateFrom, dateTo);
+  const weeks = groupDatesByWeek(dates);
+  if(!weeks.length) { toast('No valid date range','error'); return; }
+  const entries = collectEntries();
+  // Delete previous batch if editing
+  if(state.currentBatchIds.length) {
+    for(const id of state.currentBatchIds) {
+      await db.from('payroll_reports').delete().eq('id', id);
+    }
+  }
+  const createdIds = [];
+  for(let wi = 0; wi < weeks.length; wi++) {
+    const week        = weeks[wi];
+    const weekEnding  = toDateStr(week.friday);
+    const weekInvoice = weeks.length > 1 ? `${invoice}-${wi+1}` : invoice;
+    const { data: rec, error: rErr } = await db.from('payroll_reports').insert({
+      contract_id: contractId, invoice_number: weekInvoice,
+      week_ending: weekEnding, inv_date: weekEnding,
+      payroll_number: wi + 1, status
+    }).select().single();
+    if(rErr) { toast('Error saving report: '+rErr.message,'error'); return; }
+    createdIds.push(rec.id);
+    // Build entry rows for this week
+    const entryRows = entries.map(entry => {
+      const fields = {sat_rt:0,sun_rt:0,mon_rt:0,tue_rt:0,wed_rt:0,thu_rt:0,fri_rt:0,
+                      sat_ot:0,sun_ot:0,mon_ot:0,tue_ot:0,wed_ot:0,thu_ot:0,fri_ot:0};
+      week.dates.forEach(date => {
+        const ds  = toDateStr(date);
+        const day = dateToDayField(date);
+        fields[day+'_rt'] = (fields[day+'_rt']||0) + parseFloat(entry.hoursMap[ds]?.rt||0);
+        fields[day+'_ot'] = (fields[day+'_ot']||0) + parseFloat(entry.hoursMap[ds]?.ot||0);
+      });
+      return { report_id: rec.id, employee_id: entry.employee_id,
+               sort_order: entry.sort_order, comments: entry.comments, ...fields };
+    });
+    if(entryRows.length) {
+      const { error: eErr } = await db.from('payroll_entries').insert(entryRows);
+      if(eErr) { toast('Error saving entries: '+eErr.message,'error'); return; }
+    }
+  }
+  state.currentBatchIds = createdIds;
+  state.currentReportId = createdIds[0];
+  const label = weeks.length > 1 ? `${weeks.length} weekly reports` : '1 report';
+  toast(`Saved ${label} successfully`, 'success');
+  document.getElementById('btn-preview').disabled = false;
+  document.getElementById('btn-export').disabled = false;
+  if(weeks.length > 1) {
+    document.getElementById('btn-export').textContent = `Export ${weeks.length} PDFs`;
+    document.getElementById('btn-preview').textContent = `Preview Week 1 PDF`;
+  }
+  await loadReports();
+}
+
+async function previewReport() {
+  const ids = state.currentBatchIds.length ? state.currentBatchIds : (state.currentReportId ? [state.currentReportId] : []);
+  if(ids.length) await previewReportById(ids[0]);
+}
+async function exportReport() {
+  const ids = state.currentBatchIds.length ? state.currentBatchIds : (state.currentReportId ? [state.currentReportId] : []);
+  for(const id of ids) {
+    await exportReportById(id);
+    if(ids.length > 1) await new Promise(r => setTimeout(r, 600));
+  }
+}
+
+// ===================== EMPLOYEES VIEW =====================
+function renderEmployees() {
+  const container = document.getElementById('employees-container');
+  if(!state.employees.length) {
+    container.innerHTML = '<div class="empty-state"><h3>No employees yet</h3><p>Add employees to your roster to use them in reports.</p></div>';
+    return;
+  }
+  const rows = state.employees.map(e => `<tr>
+    <td><strong>${e.last_name}, ${e.first_name}</strong></td>
+    <td>${e.trade||'—'}</td>
+    <td><span class="badge badge-blue">${e.class_code||'J'}</span></td>
+    <td>${e.rt_rate ? '$'+e.rt_rate : '—'}</td>
+    <td>${e.ot_rate ? '$'+e.ot_rate : '—'}</td>
+    <td>${e.address||'—'}</td>
+    <td><span class="badge ${e.active?'badge-green':'badge-gray'}">${e.active?'Active':'Inactive'}</span></td>
+    <td><div class="actions">
+      <button class="btn btn-charcoal btn-sm" onclick="openEmployeeModal('${e.id}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete('employee','${e.id}','${e.last_name}, ${e.first_name}')">Delete</button>
+    </div></td>
+  </tr>`).join('');
+  container.innerHTML = `<table class="data-table">
+    <thead><tr><th>Name</th><th>Trade</th><th>Class</th><th>RT Rate</th><th>OT Rate</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function openEmployeeModal(id) {
+  const e = id ? state.employees.find(x => x.id === id) : null;
+  document.getElementById('modal-emp-title').textContent = e ? 'Edit Employee' : 'Add Employee';
+  document.getElementById('emp-id').value = e?.id || '';
+  document.getElementById('emp-last-name').value = e?.last_name || '';
+  document.getElementById('emp-first-name').value = e?.first_name || '';
+  document.getElementById('emp-address').value = e?.address || '';
+  document.getElementById('emp-ssn').value = e?.ssn || '';
+  document.getElementById('emp-race').value = e?.race || '';
+  document.getElementById('emp-gender').value = e?.gender || '';
+  document.getElementById('emp-classification').value = e?.classification || 'J';
+  document.getElementById('emp-class-code').value = e?.class_code || 'J';
+  document.getElementById('emp-trade').value = e?.trade || '';
+  document.getElementById('emp-rt-rate').value = e?.rt_rate || '';
+  document.getElementById('emp-rt-benefit').value = e?.rt_benefit || '';
+  document.getElementById('emp-ot-rate').value = e?.ot_rate || '';
+  document.getElementById('emp-ot-benefit').value = e?.ot_benefit || '';
+  openModal('modal-employee');
+}
+
+async function saveEmployee() {
+  const id        = document.getElementById('emp-id').value;
+  const lastName  = document.getElementById('emp-last-name').value.trim();
+  const firstName = document.getElementById('emp-first-name').value.trim();
+  if(!lastName || !firstName) { toast('First and last name are required','error'); return; }
+  const data = {
+    last_name: lastName, first_name: firstName,
+    address: document.getElementById('emp-address').value.trim() || null,
+    ssn: document.getElementById('emp-ssn').value.trim() || null,
+    race: document.getElementById('emp-race').value || null,
+    gender: document.getElementById('emp-gender').value || null,
+    classification: document.getElementById('emp-classification').value,
+    class_code: document.getElementById('emp-class-code').value,
+    trade: document.getElementById('emp-trade').value.trim() || null,
+    rt_rate: parseFloat(document.getElementById('emp-rt-rate').value) || null,
+    rt_benefit: parseFloat(document.getElementById('emp-rt-benefit').value) || null,
+    ot_rate: parseFloat(document.getElementById('emp-ot-rate').value) || null,
+    ot_benefit: parseFloat(document.getElementById('emp-ot-benefit').value) || null,
+  };
+  const { error } = id
+    ? await db.from('employees').update(data).eq('id', id)
+    : await db.from('employees').insert(data);
+  if(error) { toast('Error saving employee: '+error.message,'error'); return; }
+  toast('Employee saved','success');
+  closeModal('modal-employee');
+  await loadEmployees();
+  renderEmployees();
+}
+
+// ===================== CONTRACTS VIEW =====================
+function renderContracts() {
+  const container = document.getElementById('contracts-container');
+  if(!state.contracts.length) {
+    container.innerHTML = '<div class="empty-state"><h3>No contracts yet</h3><p>Add contracts to use them in payroll reports.</p></div>';
+    return;
+  }
+  const rows = state.contracts.map(c => `<tr>
+    <td><strong>${c.agency}</strong></td>
+    <td>${c.facility}</td>
+    <td>${c.contract_number}</td>
+    <td>${c.project_title||'—'}</td>
+    <td>${c.project_number||'—'}</td>
+    <td><span class="badge ${c.active?'badge-green':'badge-gray'}">${c.active?'Active':'Inactive'}</span></td>
+    <td><div class="actions">
+      <button class="btn btn-charcoal btn-sm" onclick="openContractModal('${c.id}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete('contract','${c.id}','${c.agency} / ${c.facility}')">Delete</button>
+    </div></td>
+  </tr>`).join('');
+  container.innerHTML = `<table class="data-table">
+    <thead><tr><th>Agency</th><th>Facility</th><th>Contract #</th><th>Project Title</th><th>Project #</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function openContractModal(id) {
+  const c = id ? state.contracts.find(x => x.id === id) : null;
+  document.getElementById('modal-con-title').textContent = c ? 'Edit Contract' : 'Add Contract';
+  document.getElementById('con-id').value = c?.id || '';
+  document.getElementById('con-agency').value = c?.agency || '';
+  document.getElementById('con-customer-id').value = c?.customer_id || '';
+  document.getElementById('con-contract-number').value = c?.contract_number || '';
+  document.getElementById('con-facility').value = c?.facility || '';
+  document.getElementById('con-project-title').value = c?.project_title || '';
+  document.getElementById('con-project-number').value = c?.project_number || '';
+  document.getElementById('con-contractor-name').value = c?.contractor_name || 'Mico Cooling Corp.';
+  document.getElementById('con-contractor-address').value = c?.contractor_address || '30 Ramland Road, Suite 103, Orangeburg NY 10962';
+  document.getElementById('con-active').checked = c?.active !== false;
+  openModal('modal-contract');
+}
+
+async function saveContract() {
+  const id             = document.getElementById('con-id').value;
+  const agency         = document.getElementById('con-agency').value.trim();
+  const contractNumber = document.getElementById('con-contract-number').value.trim();
+  const facility       = document.getElementById('con-facility').value.trim();
+  if(!agency || !contractNumber || !facility) { toast('Agency, contract number, and facility are required','error'); return; }
+  const data = {
+    agency, contract_number: contractNumber, facility,
+    customer_id: document.getElementById('con-customer-id').value.trim() || null,
+    project_title: document.getElementById('con-project-title').value.trim() || null,
+    project_number: document.getElementById('con-project-number').value.trim() || null,
+    contractor_name: document.getElementById('con-contractor-name').value.trim() || 'Mico Cooling Corp.',
+    contractor_address: document.getElementById('con-contractor-address').value.trim() || null,
+    active: document.getElementById('con-active').checked
+  };
+  const { error } = id
+    ? await db.from('contracts').update(data).eq('id', id)
+    : await db.from('contracts').insert(data);
+  if(error) { toast('Error saving contract: '+error.message,'error'); return; }
+  toast('Contract saved','success');
+  closeModal('modal-contract');
+  await loadContracts();
+  renderContracts();
+}
+
+// ===================== DELETE =====================
+function confirmDelete(type, id, label) {
+  document.getElementById('delete-msg').textContent = `Delete ${type} "${label}"? This cannot be undone.`;
+  state.pendingDelete = { type, id };
+  document.getElementById('delete-confirm-btn').onclick = executeDeletion;
+  openModal('modal-delete');
+}
+async function executeDeletion() {
+  const { type, id } = state.pendingDelete || {};
+  if(!type || !id) return;
+  closeModal('modal-delete');
+  const tableMap = { report:'payroll_reports', employee:'employees', contract:'contracts' };
+  const { error } = await db.from(tableMap[type]).delete().eq('id', id);
+  if(error) { toast('Delete failed: '+error.message,'error'); return; }
+  toast(`${type.charAt(0).toUpperCase()+type.slice(1)} deleted`,'success');
+  if(type==='report')   { await loadReports(); }
+  else if(type==='employee') { await loadEmployees(); renderEmployees(); }
+  else if(type==='contract') { await loadContracts(); renderContracts(); }
+}
+
+// ===================== PDF =====================
+function fmtDate(d) {
+  if(!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', {month:'2-digit',day:'2-digit',year:'numeric'});
+}
+function n3(v) { return v ? parseFloat(v).toFixed(3) : ''; }
+
+function buildFormHTML(report, contract, entries, pageNum, totalPages) {
+  const weekEnding = new Date(report.week_ending + 'T00:00:00');
+  const fri = weekEnding;
+  const dates = [
+    new Date(fri.getTime()-6*86400000), new Date(fri.getTime()-5*86400000),
+    new Date(fri.getTime()-4*86400000), new Date(fri.getTime()-3*86400000),
+    new Date(fri.getTime()-2*86400000), new Date(fri.getTime()-1*86400000),
+    fri
+  ];
+  const shortDate = d => `${d.getMonth()+1}/${d.getDate()}`;
+  const c = contract || {};
+  const empIdRows = Array.from({length:5}, (_,i) => {
+    const emp = (entries[i]?.employees) || {};
+    const cls = emp.class_code || (i < entries.length ? '' : '');
+    return `<tr>
+      <td style="font-weight:bold;font-size:7px;padding:1px 0">EMPLOYEE #${i+1} ID:</td>
+      <td style="font-size:8px;padding:1px 0">${emp.id ? emp.id.slice(0,8) : ''}</td>
+      <td style="border-left:1px solid #000;text-align:center;font-weight:bold;font-size:7px;padding-left:6px">${cls}</td>
+    </tr>`;
+  }).join('');
+
+  const empRowsHTML = entries.length ? entries.map((entry, i) => {
+    const emp  = entry.employees || {};
+    const days = ['sat','sun','mon','tue','wed','thu','fri'];
+    let rt = 0, ot = 0;
+    days.forEach(d => { rt += parseFloat(entry[d+'_rt']||0); ot += parseFloat(entry[d+'_ot']||0); });
+    const rtG = (rt*(emp.rt_rate||0)).toFixed(2);
+    const otG = (ot*(emp.ot_rate||0)).toFixed(2);
+    const rtDays = days.map(d => `<td style="border:1px solid #000;text-align:center;font-size:7.5px;padding:2px">${parseFloat(entry[d+'_rt']||0)||''}</td>`).join('');
+    const otDays = days.map(d => `<td style="border:1px solid #000;text-align:center;font-size:7.5px;padding:2px">${parseFloat(entry[d+'_ot']||0)||''}</td>`).join('');
+    const lastBorder = i < entries.length-1 ? 'border-bottom:1px solid #000;' : '';
+    return `
+      <tr style="height:17px">
+        <td style="border:1px solid #000;padding:2px 3px;font-size:7.5px;font-weight:bold">${emp.last_name||''};${emp.first_name||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7.5px;vertical-align:middle" rowspan="3">${emp.race||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7.5px;vertical-align:middle" rowspan="3">${emp.gender||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">J</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">J</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">S</td>
+        ${rtDays}
+        <td style="border:1px solid #000;text-align:center;font-size:7.5px;font-weight:bold">${rt||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">${n3(emp.rt_rate)}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">${parseFloat(rtG)||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">${n3(emp.rt_benefit)}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">U</td>
+        <td style="border:1px solid #000;padding:2px 3px;font-size:7px">${entry.comments||''}</td>
+      </tr>
+      <tr style="height:15px">
+        <td style="border:1px solid #000;padding:2px 3px;font-size:7px">${emp.address||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">A</td>
+        <td style="border:1px solid #000;padding:2px 3px;font-size:6.5px" colspan="2">${emp.trade||''}</td>
+        <td style="border:1px solid #000" colspan="7"></td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">E</td>
+        <td style="border:1px solid #000"></td>
+      </tr>
+      <tr style="height:15px">
+        <td style="border:1px solid #000;padding:2px 3px;font-size:7px;font-style:italic">${emp.ssn||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">H</td>
+        <td style="border:1px solid #000"></td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">O</td>
+        ${otDays}
+        <td style="border:1px solid #000;text-align:center;font-size:7.5px;font-weight:bold">${ot||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">${n3(emp.ot_rate)}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">${parseFloat(otG)||''}</td>
+        <td style="border:1px solid #000;text-align:center;font-size:7px">${n3(emp.ot_benefit)}</td>
+        <td style="border:1px solid #000"></td>
+        <td style="border:1px solid #000"></td>
+      </tr>`;
+  }).join('') : `<tr><td colspan="21" style="height:200px;border:1px solid #000"></td></tr>`;
+
+  const emptyRows = entries.length < 6
+    ? Array(6-entries.length).fill(0).map(_=>`<tr style="height:47px">
+        <td style="border:1px solid #000" colspan="3"></td>
+        <td style="border:1px solid #000"></td><td style="border:1px solid #000"></td>
+        <td colspan="3" style="border:1px solid #000"></td>
+        <td colspan="7" style="border:1px solid #000"></td>
+        <td colspan="5" style="border:1px solid #000"></td>
+      </tr>`).join('') : '';
+
+  return `<div style="width:816px;min-height:1056px;background:white;padding:16px 18px;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;font-size:7.5px;color:#000">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:4px;border:1px solid #000">
+    <tr>
+      <td style="width:60%;padding:3px 6px;border-right:1px solid #000;vertical-align:top">
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="width:90px;font-weight:bold;font-size:7px;padding:1px 0">AGENCY:</td><td style="font-size:8px">${c.agency||''}</td></tr>
+          <tr><td style="font-weight:bold;font-size:7px;padding:1px 0">FACILITY:</td><td style="font-size:8px">${c.facility||''}</td></tr>
+          <tr><td style="font-weight:bold;font-size:7px;padding:1px 0">INVOICE #:</td><td style="font-size:8px">${report.invoice_number||''}</td></tr>
+          <tr>
+            <td style="font-weight:bold;font-size:7px;padding:1px 0">WEEK ENDING:</td><td style="font-size:8px">${fmtDate(report.week_ending)}</td>
+            <td style="font-weight:bold;font-size:7px;padding:1px 16px 1px 8px">INV DATE:</td><td style="font-size:8px">${fmtDate(report.inv_date)}</td>
+          </tr>
+        </table>
+      </td>
+      <td style="width:40%;padding:3px 6px;vertical-align:top">
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td colspan="2" style="font-weight:bold;font-size:7px;padding:1px 0">EMPLOYEE ID</td>
+            <td style="font-weight:bold;font-size:7px;text-align:center;border-left:1px solid #000;padding-left:6px">CLASS</td>
+          </tr>
+          ${empIdRows}
+        </table>
+      </td>
+    </tr>
+  </table>
+  <table style="width:100%;border-collapse:collapse">
+    <tr><td colspan="21" style="border:1px solid #000;text-align:center;font-size:9px;font-weight:bold;padding:3px">NEW YORK CITY HEALTH AND HOSPITALS CORPORATION</td></tr>
+    <tr><td colspan="21" style="border:1px solid #000;text-align:center;font-size:9px;font-weight:bold;padding:3px;letter-spacing:3px">PAYROLL REPORT</td></tr>
+    <tr>
+      <td colspan="10" style="border:1px solid #000;padding:2px 4px;font-size:7px;font-weight:bold">PAYROLL NUMBER: ${report.payroll_number||1}</td>
+      <td colspan="11" style="border:1px solid #000;padding:2px 4px;font-size:7px;font-weight:bold">REQUISITION #: ${report.invoice_number||''}</td>
+    </tr>
+    <tr>
+      <td colspan="7" style="border:1px solid #000;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Name of Contractor/Subcontractor</td>
+      <td colspan="5" style="border:1px solid #000;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Contract Number</td>
+      <td colspan="5" style="border:1px solid #000;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Facility</td>
+      <td colspan="4" style="border:1px solid #000;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Project Number</td>
+    </tr>
+    <tr>
+      <td colspan="7" style="border:1px solid #000;padding:3px;font-size:8px">${c.contractor_name||'Mico Cooling Corp.'}</td>
+      <td colspan="5" style="border:1px solid #000;padding:3px;font-size:8px">${c.contract_number||''}</td>
+      <td colspan="5" style="border:1px solid #000;padding:3px;font-size:8px">${c.facility||''}</td>
+      <td colspan="4" style="border:1px solid #000;padding:3px;font-size:8px">${c.project_number||''}</td>
+    </tr>
+    <tr>
+      <td colspan="7" style="border:1px solid #000;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Address</td>
+      <td colspan="6" style="border:1px solid #000;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Report Ending Period</td>
+      <td colspan="8" style="border:1px solid #000;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Project Title</td>
+    </tr>
+    <tr>
+      <td colspan="7" style="border:1px solid #000;padding:3px;font-size:8px">${c.contractor_address||'30 Ramland Road, Suite 103, Orangeburg NY 10962'}</td>
+      <td colspan="6" style="border:1px solid #000;padding:3px;font-size:8px">${fmtDate(report.week_ending)}</td>
+      <td colspan="8" style="border:1px solid #000;padding:3px;font-size:8px">${c.project_title||''}</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">1</td>
+      <td style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">2</td>
+      <td style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">3</td>
+      <td colspan="3" style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">4</td>
+      <td colspan="7" style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">5</td>
+      <td style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">6</td>
+      <td style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">7</td>
+      <td style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">8</td>
+      <td colspan="2" style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">9</td>
+      <td style="border:1px solid #000;text-align:center;font-size:7px;font-weight:bold;padding:2px">10</td>
+    </tr>
+    <tr style="height:36px">
+      <td colspan="3" style="border:1px solid #000;font-size:6.5px;font-weight:bold;text-align:center;padding:2px;vertical-align:middle">NAME&nbsp;ADDRESS&nbsp;SS#</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">R&nbsp;A&nbsp;C&nbsp;E</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">G&nbsp;E&nbsp;N&nbsp;D&nbsp;E&nbsp;R</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">CHECK<br>J OR A</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">LIST</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">TRADE</td>
+      <td colspan="7" style="border:1px solid #000;font-size:6.5px;font-weight:bold;text-align:center;padding:2px;vertical-align:middle">DAY AND DATE</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">TTL<br>HRS</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">BASE<br>RATE<br>/HR</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">GROSS<br>PAY</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">PER<br>HR</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">TO</td>
+      <td style="border:1px solid #000;font-size:6px;font-weight:bold;text-align:center;padding:1px;vertical-align:middle">COMMENTS</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="border:1px solid #000;padding:2px 3px;font-size:7px"></td>
+      <td style="border:1px solid #000"></td><td style="border:1px solid #000"></td>
+      <td colspan="3" style="border:1px solid #000"></td>
+      ${dates.map(d=>`<td style="border:1px solid #000;text-align:center;font-size:7px;padding:2px">${shortDate(d)}</td>`).join('')}
+      <td colspan="5" style="border:1px solid #000"></td>
+    </tr>
+    <tr style="height:4px"><td colspan="21" style="border-left:1px solid #000;border-right:1px solid #000"></td></tr>
+    ${empRowsHTML}
+    ${emptyRows}
+  </table>
+  <table style="width:100%;border-collapse:collapse;margin-top:4px;border:1px solid #000">
+    <tr>
+      <td colspan="3" style="border:1px solid #000;padding:4px 6px">
+        <div style="font-size:7px;font-weight:bold">Printed Name and Signature of Corporate Officer:</div>
+        <div style="font-size:8px;margin-top:4px">Helen Riise, President</div>
+        <div style="height:20px;border-bottom:1px solid #000;margin-top:6px"></div>
+        <div style="font-size:7px;margin-top:4px">Signature</div>
+      </td>
+      <td colspan="2" style="border:1px solid #000;padding:4px 6px;vertical-align:top">
+        <div style="font-size:7px;font-weight:bold">Corporate Position:</div>
+        <div style="font-size:8px;margin-top:4px">President</div>
+        <div style="font-size:7px;font-weight:bold;margin-top:8px">Company Name:</div>
+        <div style="font-size:8px;margin-top:2px">Mico Cooling Corp.</div>
+      </td>
+      <td colspan="2" style="border:1px solid #000;padding:4px 6px;vertical-align:top">
+        <div style="font-size:7px;font-weight:bold">Sworn to me this ____day of:</div>
+        <div style="font-size:7px;margin-top:8px">County of: Rockland</div>
+        <div style="height:24px;border-bottom:1px solid #000;margin-top:16px"></div>
+        <div style="font-size:7px;margin-top:2px;text-align:center">Notary Public (Include Stamp)</div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="7" style="border:1px solid #000;padding:3px 6px">
+        <div style="font-size:6.5px;line-height:1.7">
+          I certify that I am a Corporate Officer and/or Owner and that the information above is correct and represents the wages and benefits paid to the individuals listed; that the individuals listed are my employees and represents all the persons who performed any contract work during the week of the Payroll Report at the location shown for the Contract Number specified; and the office pay records, including WT-4-B Reports are available for review by NYCHHC, which verifies that wages and benefits specified were paid. This certification applies to any continuation sheets for this pay period which is/are attached.
+        </div>
+        <div style="font-size:6.5px;margin-top:4px">HHC 1702 (August 2001) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; INSTRUCTIONS ON REVERSE SIDE</div>
+      </td>
+    </tr>
+  </table>
+  ${totalPages > 1 ? `<div style="text-align:right;font-size:7px;margin-top:4px">Page ${pageNum} of ${totalPages}</div>` : ''}
+</div>`;
+}
+
+let currentPreviewReportId = null;
+
+async function previewReportById(id) {
+  currentPreviewReportId = id;
+  const report   = state.reports.find(r => r.id === id);
+  if(!report) { toast('Report not found','error'); return; }
+  const contract = state.contracts.find(c => c.id === report.contract_id) || {};
+  const entries  = await loadEntries(id);
+  const PER_PAGE = 8;
+  const pages = [];
+  for(let i = 0; i < Math.max(1, entries.length); i += PER_PAGE) pages.push(entries.slice(i, i+PER_PAGE));
+  const container = document.getElementById('preview-pages');
+  container.innerHTML = '';
+  pages.forEach((pg, idx) => {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'margin-bottom:24px;border:2px solid #dde3ef;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1)';
+    if(pages.length > 1) {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'background:var(--navy-light);padding:6px 12px;font-size:11px;font-weight:700;color:var(--navy)';
+      lbl.textContent = `Page ${idx+1} of ${pages.length}`;
+      wrapper.appendChild(lbl);
+    }
+    const inner = document.createElement('div');
+    inner.style.cssText = 'transform:scale(0.85);transform-origin:top left;width:calc(100%/0.85)';
+    inner.innerHTML = buildFormHTML(report, contract, pg, idx+1, pages.length);
+    wrapper.appendChild(inner);
+    container.appendChild(wrapper);
+  });
+  openModal('modal-preview');
+}
+
+function exportCurrentReport() {
+  if(currentPreviewReportId) exportReportById(currentPreviewReportId);
+}
+
+async function exportReportById(id) {
+  const report   = state.reports.find(r => r.id === id);
+  if(!report) { toast('Report not found','error'); return; }
+  const contract = state.contracts.find(c => c.id === report.contract_id) || {};
+  const entries  = await loadEntries(id);
+  toast('Generating PDF...','info');
+  const PER_PAGE = 8;
+  const pages = [];
+  for(let i = 0; i < Math.max(1, entries.length); i += PER_PAGE) pages.push(entries.slice(i, i+PER_PAGE));
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'letter'});
+  const pdfWrapper = document.getElementById('pdf-page');
+  for(let p = 0; p < pages.length; p++) {
+    if(p > 0) pdf.addPage();
+    pdfWrapper.innerHTML = buildFormHTML(report, contract, pages[p], p+1, pages.length);
+    await new Promise(r => setTimeout(r, 200));
+    const canvas = await html2canvas(pdfWrapper, {scale:2, useCORS:true, allowTaint:true, width:816, windowWidth:816, logging:false});
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 215.9, 279.4);
+  }
+  pdf.save(`payroll-${report.invoice_number}-${report.week_ending}.pdf`);
+  toast('PDF exported','success');
+}
+
+// ===================== INIT =====================
+window.addEventListener('DOMContentLoaded', async () => {
+  await init();
+  renderEmployees();
+  renderContracts();
+});
+</script>
+</body>
+</html>
