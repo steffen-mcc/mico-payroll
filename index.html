@@ -8,6 +8,27 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- ── MICO Auth Guard ─────────────────────────────────────────────────────── -->
+<style id="mico-auth-style">body{visibility:hidden!important}</style>
+<script>
+(async function micoAuthGuard() {
+  const AUTH_URL = 'https://kbqkwlhmkvwnutqkcstx.supabase.co';
+  const AUTH_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImticWt3bGhta3Z3bnV0cWtjc3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDY0ODUsImV4cCI6MjA5MTY4MjQ4NX0.Fxhi8kP391JBOMNuQvRpT7p4ssf-z5oxv-ooslrsEj4';
+  const LOGIN_URL = 'https://login.micocc.net';
+  const authClient = window.supabase.createClient(AUTH_URL, AUTH_KEY, {
+    auth: { storageKey: 'mico-auth', detectSessionInUrl: true, autoRefreshToken: true, persistSession: true }
+  });
+  const { data: { session } } = await authClient.auth.getSession();
+  if (!session) {
+    window.location.replace(LOGIN_URL + '/?redirect=' + encodeURIComponent(location.href.split('#')[0]));
+    return;
+  }
+  window.micoUser = session.user;
+  window.micoAuthClient = authClient;
+  document.getElementById('mico-auth-style').remove();
+})();
+</script>
+<!-- ─────────────────────────────────────────────────────────────────────────── -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -166,7 +187,10 @@ html,body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Sego
     <button class="nav-tab" onclick="showView('employees')">Employees</button>
     <button class="nav-tab" onclick="showView('contracts')">Contracts</button>
   </div>
-  <div class="nav-right">v1.0</div>
+  <div class="nav-right" style="display:flex;align-items:center;gap:10px;">
+    <span id="nav-user-email" style="font-size:11px;color:rgba(255,255,255,.4);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <button onclick="micoSignOut()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);font-size:12px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;letter-spacing:.2px;">Sign Out</button>
+  </div>
 </nav>
 
 <div id="main-content">
@@ -1348,7 +1372,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   await init();
   renderEmployees();
   renderContracts();
+  // Show logged-in user email
+  const el = document.getElementById('nav-user-email');
+  if (el && window.micoUser?.email) el.textContent = window.micoUser.email;
 });
+
+// ── MICO Sign Out ─────────────────────────────────────────────────────────────
+async function micoSignOut() {
+  if (window.micoAuthClient) await window.micoAuthClient.auth.signOut();
+  window.location.replace('https://login.micocc.net');
+}
 </script>
 </body>
 </html>
