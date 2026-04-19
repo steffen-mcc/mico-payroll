@@ -7,11 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
 <!-- ── MICO Auth Guard ─────────────────────────────────────────────────────── -->
 <style id="mico-auth-style">body{visibility:hidden!important}</style>
 <script>
 (async function micoAuthGuard() {
+  if (location.protocol === 'file:') { document.getElementById('mico-auth-style').remove(); return; }
   const AUTH_URL = 'https://kbqkwlhmkvwnutqkcstx.supabase.co';
   const AUTH_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImticWt3bGhta3Z3bnV0cWtjc3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDY0ODUsImV4cCI6MjA5MTY4MjQ4NX0.Fxhi8kP391JBOMNuQvRpT7p4ssf-z5oxv-ooslrsEj4';
   const LOGIN_URL = 'https://login.micocc.net';
