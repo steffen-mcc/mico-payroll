@@ -1779,6 +1779,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Show logged-in user email
   const el = document.getElementById('nav-user-email');
   if (el && window.micoUser?.email) el.textContent = window.micoUser.email;
+  // Logo → back to Reports tab
+  const _logo = document.querySelector('.nav-logo-img');
+  if (_logo) { _logo.style.cursor = 'pointer'; _logo.title = 'Back to Reports'; _logo.addEventListener('click', () => showView('reports')); }
 });
 
 // ── MICO Sign Out ─────────────────────────────────────────────────────────────
