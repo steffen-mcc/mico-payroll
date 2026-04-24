@@ -517,8 +517,8 @@ html,body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Sego
 <div id="toast-container"></div>
 
 <script>
-const SUPABASE_URL = 'https://tejtfoubmfdcdznyfdio.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlanRmb3VibWZkY2R6bnlmZGlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDExOTYsImV4cCI6MjA5MjAxNzE5Nn0.593tO5wI1xjkRHo0-wFd6iC0UgSD8WroCTdJH3wDe7k';
+const SUPABASE_URL = 'https://kbqkwlhmkvwnutqkcstx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImticWt3bGhta3Z3bnV0cWtjc3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDY0ODUsImV4cCI6MjA5MTY4MjQ4NX0.Fxhi8kP391JBOMNuQvRpT7p4ssf-z5oxv-ooslrsEj4';
 const escHtml = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 let db;
@@ -593,12 +593,12 @@ function openModal(id)  { document.getElementById(id).classList.remove('hidden')
 
 // ===================== DATA =====================
 async function loadEmployees() {
-  const { data, error } = await db.from('employees').select('*').order('last_name');
+  const { data, error } = await db.from('payroll_employees').select('*').order('last_name');
   if(error) { toast('Error loading employees: ' + error.message, 'error'); return; }
   state.employees = data || [];
 }
 async function loadContracts() {
-  const { data, error } = await db.from('contracts').select('*').order('agency');
+  const { data, error } = await db.from('payroll_contracts').select('*').order('agency');
   if(error) { toast('Error loading contracts: ' + error.message, 'error'); return; }
   state.contracts = data || [];
 }
@@ -619,12 +619,12 @@ async function loadEntries(reportId) {
   return data || [];
 }
 async function loadUnionClasses() {
-  const { data, error } = await db.from('union_classifications').select('*').order('sort_order').order('code');
+  const { data, error } = await db.from('payroll_union_classifications').select('*').order('sort_order').order('code');
   if(error) { console.warn('Error loading union classes:', error.message); return; }
   state.unionClasses = data || [];
 }
 async function loadRatePeriods() {
-  const { data, error } = await db.from('union_rate_periods').select('*').order('effective_from', {ascending: false});
+  const { data, error } = await db.from('payroll_union_rate_periods').select('*').order('effective_from', {ascending: false});
   if(error) { console.warn('Error loading rate periods:', error.message); return; }
   state.ratePeriods = data || [];
 }
@@ -684,8 +684,8 @@ async function saveUnionClass() {
     sort_order: parseInt(document.getElementById('uc-sort-order').value) || 0,
   };
   const { error } = id
-    ? await db.from('union_classifications').update(data).eq('id', id)
-    : await db.from('union_classifications').insert(data);
+    ? await db.from('payroll_union_classifications').update(data).eq('id', id)
+    : await db.from('payroll_union_classifications').insert(data);
   if (error) { toast('Save failed: ' + error.message, 'error'); return; }
   toast(id ? 'Classification updated' : 'Classification added', 'success');
   closeModal('modal-union-class');
@@ -803,8 +803,8 @@ async function saveRatePeriod() {
     ot_benefit: parseFloat(document.getElementById('rpf-ot-benefit').value) || null,
   };
   const { error } = id
-    ? await db.from('union_rate_periods').update(data).eq('id', id)
-    : await db.from('union_rate_periods').insert(data);
+    ? await db.from('payroll_union_rate_periods').update(data).eq('id', id)
+    : await db.from('payroll_union_rate_periods').insert(data);
   if (error) { toast('Save failed: ' + error.message, 'error'); return; }
   toast(id ? 'Rate period updated' : 'Rate period added', 'success');
   closeModal('modal-rate-period-form');
@@ -814,7 +814,7 @@ async function saveRatePeriod() {
 }
 
 async function deleteRatePeriod(id, classCode) {
-  const { error } = await db.from('union_rate_periods').delete().eq('id', id);
+  const { error } = await db.from('payroll_union_rate_periods').delete().eq('id', id);
   if (error) { toast('Delete failed: ' + error.message, 'error'); return; }
   toast('Rate period deleted', 'success');
   await loadRatePeriods();
@@ -1347,8 +1347,8 @@ async function saveEmployee() {
     ot_benefit: parseFloat(document.getElementById('emp-ot-benefit').value) || null,
   };
   const { error } = id
-    ? await db.from('employees').update(data).eq('id', id)
-    : await db.from('employees').insert(data);
+    ? await db.from('payroll_employees').update(data).eq('id', id)
+    : await db.from('payroll_employees').insert(data);
   if(error) { toast('Error saving employee: '+error.message,'error'); return; }
   toast('Employee saved','success');
   closeModal('modal-employee');
@@ -1413,8 +1413,8 @@ async function saveContract() {
     active: document.getElementById('con-active').checked
   };
   const { error } = id
-    ? await db.from('contracts').update(data).eq('id', id)
-    : await db.from('contracts').insert(data);
+    ? await db.from('payroll_contracts').update(data).eq('id', id)
+    : await db.from('payroll_contracts').insert(data);
   if(error) { toast('Error saving contract: '+error.message,'error'); return; }
   toast('Contract saved','success');
   closeModal('modal-contract');
