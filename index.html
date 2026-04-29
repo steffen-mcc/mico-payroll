@@ -1508,8 +1508,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
     <tr style="height:17px">
       ${rn(formRow)}
       <td style="${B}padding:2px 3px;font-size:7.5px;font-weight:bold" colspan="3">${emp.last_name||''};${emp.first_name||''}</td>
-      <td style="${B}text-align:center;font-size:7.5px;vertical-align:middle" rowspan="3">${emp.race||''}</td>
-      <td style="${B}text-align:center;font-size:7.5px;vertical-align:middle" rowspan="3">${emp.gender||''}</td>
+      <td style="${B}font-size:7px;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;" rowspan="3">${emp.race||''}</td>
+      <td style="${B}font-size:7px;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;" rowspan="3">${emp.gender||''}</td>
       <td style="${B}text-align:center;font-size:7px">J</td>
       <td style="${B}text-align:center;font-size:7px">J</td>
       <td style="${B}text-align:center;font-size:7px">S</td>
@@ -1548,7 +1548,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
     </tr>`;
   }).join('');
 
-  return `<div style="width:816px;min-height:1056px;background:white;padding:16px 18px;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;font-size:7.5px;color:#000">
+  return `<div style="width:1056px;min-height:816px;background:white;padding:16px 18px;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;font-size:7.5px;color:#000">
   <table style="width:100%;border-collapse:collapse">
     <!-- Row 1 -->
     <tr>${rn(1)}<td colspan="21" style="${B}text-align:center;font-size:9px;font-weight:bold;padding:3px">NEW YORK CITY HEALTH AND HOSPITALS CORPORATION</td></tr>
@@ -1599,8 +1599,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
     <tr>
       <td style="${RN}" rowspan="2"></td>
       <td colspan="3" rowspan="2" ${H('','')}>NAME&nbsp;ADDRESS&nbsp;SS#</td>
-      <td rowspan="2" ${H('')}>R&nbsp;A&nbsp;C&nbsp;E</td>
-      <td rowspan="2" ${H('')}>G&nbsp;E&nbsp;N&nbsp;D&nbsp;E&nbsp;R</td>
+      <td rowspan="2" style="${B}font-size:6px;font-weight:bold;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;">RACE</td>
+      <td rowspan="2" style="${B}font-size:6px;font-weight:bold;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;">GENDER</td>
       <td colspan="3" style="${B}padding:1px;"></td>
       <td colspan="7" ${H('')}>DAY AND DATE</td>
       <td rowspan="2" ${H('')}>TTL<br>HRS</td>
@@ -1715,7 +1715,7 @@ async function openReportPDF(id) {
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Payroll Report — ${report.invoice_number}</title>
 <style>
-  @page { size: letter; margin: 0; }
+  @page { size: letter landscape; margin: 0; }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 0; background: #f0f3fa; font-family: Arial, sans-serif; }
   .print-bar {
@@ -1739,7 +1739,7 @@ async function openReportPDF(id) {
     body { background: white; }
     .pages-wrap { padding: 0; }
     .page-shell { margin: 0; border-radius: 0; box-shadow: none; }
-    @page { size: letter; margin: 0; }
+    @page { size: letter landscape; margin: 0; }
   }
 </style>
 </head><body>
