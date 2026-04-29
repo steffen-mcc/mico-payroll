@@ -1518,7 +1518,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold" rowspan="2">${rt||''}</td>
       <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_rate', report.week_ending))}</td>
       <td style="${B}text-align:center;font-size:7px;font-weight:bold" rowspan="3">${parseFloat(totalG) ? '$'+totalG : ''}</td>
-      <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'rt_benefit', report.week_ending))}</td>
+      <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_benefit', report.week_ending))}</td>
       <td style="${B}text-align:center;font-size:7px">U</td>
       <td style="${B}padding:2px 3px;font-size:7px">X-638</td>
     </tr>
@@ -1527,9 +1527,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}padding:2px 3px;font-size:7px" colspan="3">${fmtAddress(emp)!=='—'?fmtAddress(emp):''}</td>
       <td style="${B}text-align:center;font-size:7px">A</td>
       <td style="${B}padding:2px 3px;font-size:6.5px;vertical-align:top" colspan="2" rowspan="2">${emp.trade||''}<br>Ref-A/C</td>
-      <td style="${B}"></td>
-      <td style="${B}"></td>
-      <td style="${B}"></td>
+      <td style="${B}text-align:center;font-size:7px" rowspan="2">E</td>
+      <td style="${B}" rowspan="2"></td>
     </tr>
     <tr style="height:15px">
       ${rn(formRow+2)}
@@ -1540,8 +1539,6 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold">${ot||''}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_rate', report.week_ending))}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_benefit', report.week_ending))}</td>
-      <td style="${B}text-align:center;font-size:7px">E</td>
-      <td style="${B}"></td>
     </tr>`;
   }).join('');
 
