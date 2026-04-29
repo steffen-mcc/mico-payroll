@@ -1485,15 +1485,15 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
         <td style="${B}" colspan="3"></td>
         <td style="${B}" rowspan="3"></td>
         <td style="${B}" rowspan="3"></td>
-        <td style="${B}" colspan="17"></td>
+        <td style="${B}" colspan="18"></td>
       </tr>
       <tr style="height:15px">
         ${rn(formRow+1)}
-        <td style="${B}" colspan="20"></td>
+        <td style="${B}" colspan="21"></td>
       </tr>
       <tr style="height:15px">
         ${rn(formRow+2)}
-        <td style="${B}" colspan="20"></td>
+        <td style="${B}" colspan="21"></td>
       </tr>`;
     }
 
@@ -1519,16 +1519,18 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_rate', report.week_ending))}</td>
       <td style="${B}text-align:center;font-size:7px;font-weight:bold" rowspan="3">${parseFloat(totalG) ? '$'+totalG : ''}</td>
       <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_benefit', report.week_ending))}</td>
-      <td style="${B}text-align:center;font-size:7px">U</td>
+      <td style="${B}text-align:center;font-size:7px;width:16px">U</td>
       <td style="${B}padding:2px 3px;font-size:7px">X-638</td>
+      <td style="${B}"></td>
     </tr>
     <tr style="height:15px">
       ${rn(formRow+1)}
       <td style="${B}padding:2px 3px;font-size:7px" colspan="3">${fmtAddress(emp)!=='—'?fmtAddress(emp):''}</td>
       <td style="${B}text-align:center;font-size:7px">A</td>
       <td style="${B}padding:2px 3px;font-size:6.5px;vertical-align:top" colspan="2" rowspan="2">${emp.trade||''}<br>Ref-A/C</td>
-      <td style="${B}text-align:center;font-size:7px" rowspan="2">E</td>
+      <td style="${B}text-align:center;font-size:7px;width:16px" rowspan="2">E</td>
       <td style="${B}" rowspan="2"></td>
+      <td style="${B}"></td>
     </tr>
     <tr style="height:15px">
       ${rn(formRow+2)}
@@ -1539,20 +1541,21 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold">${ot||''}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_rate', report.week_ending))}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_benefit', report.week_ending))}</td>
+      <td style="${B}"></td>
     </tr>`;
   }).join('');
 
   return `<div style="width:1056px;min-height:816px;background:white;padding:16px 18px;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;font-size:7.5px;color:#000">
   <table style="width:100%;border-collapse:collapse">
     <!-- Row 1 -->
-    <tr>${rn(1)}<td colspan="22" style="${B}text-align:center;font-size:9px;font-weight:bold;padding:3px">NEW YORK CITY HEALTH AND HOSPITALS CORPORATION</td></tr>
+    <tr>${rn(1)}<td colspan="23" style="${B}text-align:center;font-size:9px;font-weight:bold;padding:3px">NEW YORK CITY HEALTH AND HOSPITALS CORPORATION</td></tr>
     <!-- Row 2 -->
-    <tr>${rn(2)}<td colspan="22" style="${B}text-align:center;font-size:9px;font-weight:bold;padding:3px;letter-spacing:3px">PAYROLL REPORT</td></tr>
+    <tr>${rn(2)}<td colspan="23" style="${B}text-align:center;font-size:9px;font-weight:bold;padding:3px;letter-spacing:3px">PAYROLL REPORT</td></tr>
     <!-- Row 3 -->
     <tr>
       ${rn(3)}
       <td colspan="10" style="${B}padding:2px 4px;font-size:7px;font-weight:bold">PAYROLL NUMBER: ${report.payroll_number||1}</td>
-      <td colspan="12" style="${B}padding:2px 4px;font-size:7px;font-weight:bold">REQUISITION #: ${report.invoice_number||''}</td>
+      <td colspan="13" style="${B}padding:2px 4px;font-size:7px;font-weight:bold">REQUISITION #: ${report.invoice_number||''}</td>
     </tr>
     <!-- Row 4 -->
     <tr>
@@ -1560,7 +1563,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td colspan="7" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Name of Contractor/Subcontractor</td>
       <td colspan="5" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Contract Number</td>
       <td colspan="5" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Facility</td>
-      <td colspan="5" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Project Number</td>
+      <td colspan="6" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Project Number</td>
     </tr>
     <!-- Row 5 -->
     <tr>
@@ -1568,26 +1571,26 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td colspan="7" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.contractor_name||'Mico Cooling Corp.'}</td>
       <td colspan="5" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.contract_number||''}</td>
       <td colspan="5" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.facility||''}</td>
-      <td colspan="5" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.project_number||''}</td>
+      <td colspan="6" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.project_number||''}</td>
     </tr>
     <!-- Row 6 -->
     <tr>
       ${rn(6)}
       <td colspan="7" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Address</td>
       <td colspan="6" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Report Ending Period</td>
-      <td colspan="9" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Project Title</td>
+      <td colspan="10" style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7px;font-weight:bold;text-transform:uppercase">Project Title</td>
     </tr>
     <!-- Row 7 -->
     <tr>
       ${rn(7)}
       <td colspan="7" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.contractor_address||'30 Ramland Road, Suite 103, Orangeburg NY 10962'}</td>
       <td colspan="6" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${fmtDate(report.week_ending)}</td>
-      <td colspan="9" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.project_title||''}</td>
+      <td colspan="10" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.project_title||''}</td>
     </tr>
     <!-- Row 8: official column numbers -->
     <tr>
       <td style="${RN}"></td>
-      ${cn(3,'1')}${cn(1,'2')}${cn(1,'3')}${cn(3,'4')}${cn(1,'')}${cn(7,'5')}${cn(1,'6')}${cn(1,'7')}${cn(1,'8')}${cn(2,'')}${cn(1,'')}
+      ${cn(3,'1')}${cn(1,'2')}${cn(1,'3')}${cn(3,'4')}${cn(1,'')}${cn(7,'5')}${cn(1,'6')}${cn(1,'7')}${cn(1,'8')}${cn(3,'')}${cn(1,'')}
     </tr>
     <!-- Row 9: group-level column headers (rowspan=2 for stable columns) -->
     <tr>
@@ -1601,14 +1604,14 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td rowspan="2" ${H('')}>TTL<br>HRS</td>
       <td rowspan="2" ${H('')}>BASE<br>RATE<br>/HR</td>
       <td rowspan="2" ${H('')}>GROSS<br>PAY</td>
-      <td colspan="2" ${H('')}>BENEFITS</td>
+      <td colspan="3" ${H('')}>BENEFITS</td>
       <td rowspan="2" ${H('font-size:5.5px;')}>COMMENTS<br>(IF FOR CHANGE<br>WORK SPECIFY B#C#)</td>
     </tr>
     <!-- Row 10: sub-labels (CHECK/LIST/TRADE and S/O covered by rowspan=2 above) -->
     <tr>
       ${dayLabels.map(d=>`<td ${H('border-top:none;')}>${d}</td>`).join('')}
       <td ${H('')}>PER<br>HR</td>
-      <td ${H('')}>TO</td>
+      <td colspan="2" ${H('')}>TO</td>
     </tr>
     <!-- Row 11: dates -->
     <tr>
@@ -1619,10 +1622,10 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}" colspan="3"></td>
       <td style="${B}"></td>
       ${dates.map(d=>`<td style="${B}text-align:center;font-size:7px;padding:2px">${shortDate(d)}</td>`).join('')}
-      <td style="${B}" colspan="6"></td>
+      <td style="${B}" colspan="7"></td>
     </tr>
     <!-- Row 12: spacer -->
-    <tr style="height:4px">${rn(12)}<td colspan="22" style="border-left:1px solid #000;border-right:1px solid #000"></td></tr>
+    <tr style="height:4px">${rn(12)}<td colspan="23" style="border-left:1px solid #000;border-right:1px solid #000"></td></tr>
     <!-- Rows 13–27: employee data (always 5 slots) -->
     ${empRows}
   </table>
@@ -1769,4 +1772,4 @@ async function micoSignOut() {
 }
 </script>
 </body>
-</html>
+</html>                                                                                                                                                                                                                
