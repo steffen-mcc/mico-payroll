@@ -604,7 +604,7 @@ async function loadContracts() {
 }
 async function loadReports() {
   const { data, error } = await db.from('payroll_reports')
-    .select('*, contracts(agency, facility, contract_number)')
+    .select('*, payroll_contracts(agency, facility, contract_number)')
     .order('week_ending', {ascending: false});
   if(error) { toast('Error loading reports: ' + error.message, 'error'); return; }
   state.reports = data || [];
@@ -1433,7 +1433,7 @@ async function executeDeletion() {
   const { type, id } = state.pendingDelete || {};
   if(!type || !id) return;
   closeModal('modal-delete');
-  const tableMap = { report:'payroll_reports', employee:'employees', contract:'contracts', unionClass:'union_classifications' };
+  const tableMap = { report:'payroll_reports', employee:'payroll_employees', contract:'payroll_contracts', unionClass:'payroll_union_classifications' };
   const { error } = await db.from(tableMap[type]).delete().eq('id', id);
   if(error) { toast('Delete failed: '+error.message,'error'); return; }
   toast(`${type==='unionClass'?'Classification':type.charAt(0).toUpperCase()+type.slice(1)} deleted`,'success');
