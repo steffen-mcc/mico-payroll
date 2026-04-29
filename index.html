@@ -1501,6 +1501,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
     days.forEach(d => { rt += parseFloat(entry[d+'_rt']||0); ot += parseFloat(entry[d+'_ot']||0); });
     const rtG  = (rt * (empRate(emp,'rt_rate', report.week_ending)||0)).toFixed(2);
     const otG  = (ot * (empRate(emp,'ot_rate', report.week_ending)||0)).toFixed(2);
+    const totalG = (parseFloat(rtG) + parseFloat(otG)).toFixed(2);
     const rtDays = days.map(d => `<td style="${B}text-align:center;font-size:7.5px;padding:2px" rowspan="2">${parseFloat(entry[d+'_rt']||0)||''}</td>`).join('');
     const otDays = days.map(d => `<td style="${B}text-align:center;font-size:7.5px;padding:2px">${parseFloat(entry[d+'_ot']||0)||''}</td>`).join('');
 
@@ -1516,8 +1517,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       ${rtDays}
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold" rowspan="2">${rt||''}</td>
       <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_rate', report.week_ending))}</td>
-      <td style="${B}text-align:center;font-size:7px" rowspan="2">${parseFloat(rtG)||''}</td>
-      <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_benefit', report.week_ending))}</td>
+      <td style="${B}text-align:center;font-size:7px;font-weight:bold" rowspan="3">${parseFloat(totalG) ? '$'+totalG : ''}</td>
+      <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'rt_benefit', report.week_ending))}</td>
       <td style="${B}text-align:center;font-size:7px">U</td>
       <td style="${B}padding:2px 3px;font-size:7px">X-638</td>
     </tr>
@@ -1526,7 +1527,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}padding:2px 3px;font-size:7px" colspan="3">${fmtAddress(emp)!=='—'?fmtAddress(emp):''}</td>
       <td style="${B}text-align:center;font-size:7px">A</td>
       <td style="${B}padding:2px 3px;font-size:6.5px;vertical-align:top" colspan="2" rowspan="2">${emp.trade||''}<br>Ref-A/C</td>
-      <td style="${B}text-align:center;font-size:7px">E</td>
+      <td style="${B}"></td>
+      <td style="${B}"></td>
       <td style="${B}"></td>
     </tr>
     <tr style="height:15px">
@@ -1537,9 +1539,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       ${otDays}
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold">${ot||''}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_rate', report.week_ending))}</td>
-      <td style="${B}text-align:center;font-size:7px">${parseFloat(otG)||''}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_benefit', report.week_ending))}</td>
-      <td style="${B}"></td>
+      <td style="${B}text-align:center;font-size:7px">E</td>
       <td style="${B}"></td>
     </tr>`;
   }).join('');
@@ -1589,7 +1590,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
     <!-- Row 8: official column numbers -->
     <tr>
       <td style="${RN}"></td>
-      ${cn(3,'1')}${cn(1,'2')}${cn(1,'3')}${cn(3,'4')}${cn(1,'')}${cn(7,'5')}${cn(1,'6')}${cn(1,'7')}${cn(1,'')}${cn(2,'')}${cn(1,'')}
+      ${cn(3,'1')}${cn(1,'2')}${cn(1,'3')}${cn(3,'4')}${cn(1,'')}${cn(7,'5')}${cn(1,'6')}${cn(1,'7')}${cn(1,'8')}${cn(2,'')}${cn(1,'')}
     </tr>
     <!-- Row 9: group-level column headers (rowspan=2 for stable columns) -->
     <tr>
