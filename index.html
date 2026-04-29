@@ -1200,7 +1200,7 @@ function collectEntries() {
 }
 
 // ===================== SAVE REPORT =====================
-async function saveReport() {
+async async function saveReport() {
   const contractId = document.getElementById('rf-contract').value;
   const invoice    = document.getElementById('rf-invoice').value.trim();
   const dateFrom   = document.getElementById('rf-date-from').value;
@@ -1213,22 +1213,30 @@ async function saveReport() {
   if (!weeks.length) { toast('No valid date range','error'); return; }
   const entries = collectEntries();
 
-  // Delete existing record if editing
-  if (state.currentReportId) {
-    await db.from('payroll_reports').delete().eq('id', state.currentReportId);
-  }
-
-  // Create ONE report record covering the full range
   const lastFriday = toDateStr(weeks[weeks.length - 1].friday);
-  const { data: rec, error: rErr } = await db.from('payroll_reports').insert({
+  const reportData = {
     contract_id:    contractId,
     invoice_number: invoice,
     date_from:      dateFrom,
     week_ending:    lastFriday,
     inv_date:       lastFriday,
     payroll_number: weeks.length
-  }).select().single();
-  if (rErr) { toast('Error saving report: ' + rErr.message, 'error'); return; }
+  };
+
+  let reportId;
+  if (state.currentReportId) {
+    // Update existing report record
+    const { error: uErr } = await db.from('payroll_reports').update(reportData).eq('id', state.currentReportId);
+    if (uErr) { toast('Error updating report: ' + uErr.message, 'error'); return; }
+    // Delete old entries so we can re-insert fresh ones
+    await db.from('payroll_entries').delete().eq('report_id', state.currentReportId);
+    reportId = state.currentReportId;
+  } else {
+    // Insert new report record
+    const { data: rec, error: rErr } = await db.from('payroll_reports').insert(reportData).select().single();
+    if (rErr) { toast('Error saving report: ' + rErr.message, 'error'); return; }
+    reportId = rec.id;
+  }
 
   // Build entry rows for every employee × every week
   const entryRows = [];
@@ -1244,7 +1252,7 @@ async function saveReport() {
         fields[day+'_ot'] = (fields[day+'_ot']||0) + parseFloat(entry.hoursMap[ds]?.ot||0);
       });
       entryRows.push({
-        report_id:   rec.id,
+        report_id:   reportId,
         employee_id: entry.employee_id,
         sort_order:  entry.sort_order,
         comments:    entry.comments,
@@ -1434,6 +1442,10 @@ async function executeDeletion() {
   if(!type || !id) return;
   closeModal('modal-delete');
   const tableMap = { report:'payroll_reports', employee:'payroll_employees', contract:'payroll_contracts', unionClass:'payroll_union_classifications' };
+  // Delete associated entries first when deleting a report
+  if (type === 'report') {
+    await db.from('payroll_entries').delete().eq('report_id', id);
+  }
   const { error } = await db.from(tableMap[type]).delete().eq('id', id);
   if(error) { toast('Delete failed: '+error.message,'error'); return; }
   toast(`${type==='unionClass'?'Classification':type.charAt(0).toUpperCase()+type.slice(1)} deleted`,'success');
@@ -1450,6 +1462,7 @@ function fmtDate(d) {
   return dt.toLocaleDateString('en-US', {month:'2-digit',day:'2-digit',year:'numeric'});
 }
 function n3(v) { return v ? parseFloat(v).toFixed(3) : ''; }
+function fmtMoney(v) { const n = parseFloat(v); if (!n) return ''; return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
 function buildFormHTML(report, contract, entries, pageNum, totalPages) {
   const weekEnding = new Date(report.week_ending + 'T00:00:00');
@@ -1482,18 +1495,19 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       return `
       <tr style="height:17px">
         ${rn(formRow)}
-        <td style="${B}" colspan="3"></td>
+        <td style="${B}" rowspan="3" colspan="3"></td>
         <td style="${B}" rowspan="3"></td>
         <td style="${B}" rowspan="3"></td>
-        <td style="${B}" colspan="18"></td>
+        <td style="${B}" colspan="17"></td>
+        <td style="${B}" rowspan="3"></td>
       </tr>
       <tr style="height:15px">
         ${rn(formRow+1)}
-        <td style="${B}" colspan="21"></td>
+        <td style="${B}" colspan="17"></td>
       </tr>
       <tr style="height:15px">
         ${rn(formRow+2)}
-        <td style="${B}" colspan="21"></td>
+        <td style="${B}" colspan="17"></td>
       </tr>`;
     }
 
@@ -1508,7 +1522,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
     return `
     <tr style="height:17px">
       ${rn(formRow)}
-      <td style="${B}padding:2px 3px;font-size:7.5px;font-weight:bold" colspan="3">${emp.last_name||''};${emp.first_name||''}</td>
+      <td style="border:1px solid #000;border-bottom:none;padding:2px 3px;font-size:7.5px;font-weight:bold;text-align:center;" colspan="3">${emp.last_name||''};${emp.first_name||''}</td>
       <td style="${B}font-size:7px;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;" rowspan="3">${emp.race||''}</td>
       <td style="${B}font-size:7px;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;" rowspan="3">${emp.gender||''}</td>
       <td style="${B}text-align:center;font-size:7px" colspan="2">J</td>
@@ -1516,32 +1530,30 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold;vertical-align:middle" rowspan="2">S</td>
       ${rtDays}
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold" rowspan="2">${rt||''}</td>
-      <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_rate', report.week_ending))}</td>
-      <td style="${B}text-align:center;font-size:7px;font-weight:bold" rowspan="3">${parseFloat(totalG) ? '$'+totalG : ''}</td>
-      <td style="${B}text-align:center;font-size:7px" rowspan="2">${n3(empRate(emp,'rt_benefit', report.week_ending))}</td>
+      <td style="${B}text-align:center;font-size:7px" rowspan="2">${fmtMoney(empRate(emp,'rt_rate', report.week_ending))}</td>
+      <td style="${B}text-align:center;font-size:7px;font-weight:bold" rowspan="3">${fmtMoney(totalG)}</td>
+      <td style="${B}text-align:center;font-size:7px" rowspan="2">${fmtMoney(empRate(emp,'rt_benefit', report.week_ending))}</td>
       <td style="${B}text-align:center;font-size:7px;width:16px">U</td>
-      <td style="${B}padding:2px 3px;font-size:7px">X-638</td>
-      <td style="${B}"></td>
+      <td style="${B}text-align:center;font-size:7px">X-638</td>
+      <td style="${B}" rowspan="3"></td>
     </tr>
     <tr style="height:15px">
       ${rn(formRow+1)}
-      <td style="${B}padding:2px 3px;font-size:7px" colspan="3">${fmtAddress(emp)!=='—'?fmtAddress(emp):''}</td>
+      <td style="border:1px solid #000;border-top:none;border-bottom:none;padding:2px 3px;font-size:7px;text-align:center;" colspan="3">${fmtAddress(emp)!=='—'?fmtAddress(emp):''}</td>
       <td style="${B}text-align:center;font-size:7px">A</td>
-      <td style="${B}padding:2px 3px;font-size:6.5px;vertical-align:top" colspan="2" rowspan="2">${emp.trade||''}<br>Ref-A/C</td>
+      <td style="${B}padding:2px 3px;font-size:6.5px;vertical-align:middle;text-align:center;" colspan="2" rowspan="2">${emp.trade||''}<br>Ref-A/C</td>
       <td style="${B}text-align:center;font-size:7px;width:16px" rowspan="2">E</td>
       <td style="${B}" rowspan="2"></td>
-      <td style="${B}"></td>
     </tr>
     <tr style="height:15px">
       ${rn(formRow+2)}
-      <td style="${B}padding:2px 3px;font-size:7px;font-style:italic" colspan="3">${maskSSN(emp.ssn)}</td>
+      <td style="border:1px solid #000;border-top:none;padding:2px 3px;font-size:7px;font-style:italic;text-align:center;" colspan="3">${maskSSN(emp.ssn)}</td>
       <td style="${B}text-align:center;font-size:7px">H</td>
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold;vertical-align:middle">O</td>
       ${otDays}
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold">${ot||''}</td>
-      <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_rate', report.week_ending))}</td>
-      <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_benefit', report.week_ending))}</td>
-      <td style="${B}"></td>
+      <td style="${B}text-align:center;font-size:7px">${fmtMoney(empRate(emp,'ot_rate', report.week_ending))}</td>
+      <td style="${B}text-align:center;font-size:7px">${fmtMoney(empRate(emp,'ot_benefit', report.week_ending))}</td>
     </tr>`;
   }).join('');
 
@@ -1772,4 +1784,4 @@ async function micoSignOut() {
 }
 </script>
 </body>
-</html>                                                                                                                                                                                                                
+</html>                                                                                                                                                                                                               
