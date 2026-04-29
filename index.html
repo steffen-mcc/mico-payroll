@@ -612,7 +612,7 @@ async function loadReports() {
 }
 async function loadEntries(reportId) {
   const { data, error } = await db.from('payroll_entries')
-    .select('*, employees(*)')
+    .select('*, payroll_employees(*)')
     .eq('report_id', reportId)
     .order('week_number').order('sort_order');
   if(error) { toast('Error loading entries: ' + error.message, 'error'); return []; }
@@ -885,7 +885,7 @@ function renderReports() {
   let reports = state.reports;
   if (q) {
     reports = reports.filter(r => {
-      const c = r.contracts || {};
+      const c = r.payroll_contracts || {};
       return [r.invoice_number, c.agency, c.facility, c.contract_number,
               fmtDate(r.date_from), fmtDate(r.week_ending)]
         .some(v => (v||'').toLowerCase().includes(q));
@@ -898,7 +898,7 @@ function renderReports() {
     return;
   }
   const rows = reports.map(r => {
-    const c = r.contracts || {};
+    const c = r.payroll_contracts || {};
     const dateRange = r.date_from
       ? `${fmtDate(r.date_from)} &rarr; ${fmtDate(r.week_ending)}`
       : fmtDate(r.week_ending);
@@ -1475,7 +1475,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
   const days = ['sat','sun','mon','tue','wed','thu','fri'];
   const empRows = Array.from({length: 5}, (_, i) => {
     const entry    = entries[i] || null;
-    const emp      = entry ? (entry.employees || {}) : {};
+    const emp      = entry ? (entry.payroll_employees || {}) : {};
     const formRow  = 13 + (i * 3);
 
     if (!entry) {
