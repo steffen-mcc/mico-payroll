@@ -1510,10 +1510,9 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       <td style="${B}padding:2px 3px;font-size:7.5px;font-weight:bold" colspan="3">${emp.last_name||''};${emp.first_name||''}</td>
       <td style="${B}font-size:7px;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;" rowspan="3">${emp.race||''}</td>
       <td style="${B}font-size:7px;vertical-align:middle;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;width:14px;" rowspan="3">${emp.gender||''}</td>
-      <td style="${B}text-align:center;font-size:7px">J</td>
-      <td style="${B}text-align:center;font-size:7px">J</td>
+      <td style="${B}text-align:center;font-size:7px" colspan="2">J</td>
       <td style="${B}text-align:center;font-size:7px"></td>
-      <td style="${B}text-align:center;font-size:7px">S</td>
+      <td style="${B}text-align:center;font-size:7.5px;font-weight:bold;vertical-align:middle" rowspan="2">S</td>
       ${rtDays}
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold">${rt||''}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'rt_rate', report.week_ending))}</td>
@@ -1526,8 +1525,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       ${rn(formRow+1)}
       <td style="${B}padding:2px 3px;font-size:7px" colspan="3">${fmtAddress(emp)!=='—'?fmtAddress(emp):''}</td>
       <td style="${B}text-align:center;font-size:7px">A</td>
-      <td style="${B}padding:2px 3px;font-size:6.5px" colspan="2">${emp.trade||''}</td>
-      <td style="${B}"></td>
+      <td style="${B}padding:2px 3px;font-size:6.5px;vertical-align:top" colspan="2" rowspan="2">${emp.trade||''}<br>Ref-A/C</td>
       <td style="${B}"></td><td style="${B}"></td><td style="${B}"></td><td style="${B}"></td>
       <td style="${B}"></td><td style="${B}"></td><td style="${B}"></td>
       <td style="${B}"></td><td style="${B}"></td><td style="${B}"></td><td style="${B}"></td>
@@ -1538,9 +1536,7 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
       ${rn(formRow+2)}
       <td style="${B}padding:2px 3px;font-size:7px;font-style:italic" colspan="3">${maskSSN(emp.ssn)}</td>
       <td style="${B}text-align:center;font-size:7px">H</td>
-      <td style="${B}"></td>
-      <td style="${B}"></td>
-      <td style="${B}text-align:center;font-size:7px">O</td>
+      <td style="${B}text-align:center;font-size:7.5px;font-weight:bold;vertical-align:middle">O</td>
       ${otDays}
       <td style="${B}text-align:center;font-size:7.5px;font-weight:bold">${ot||''}</td>
       <td style="${B}text-align:center;font-size:7px">${n3(empRate(emp,'ot_rate', report.week_ending))}</td>
