@@ -1889,6 +1889,7 @@ async function openReportPDF(id) {
   ${rebuiltPages.map((html, i) => `<div class="page-shell" style="page-break-after:${i < rebuiltPages.length-1 ? 'always' : 'avoid'}">${html}</div>`).join('\n')}
 </div>
 </body></html>`);
+  win.document.write('<script>window.addEventListener("load",function(){document.querySelectorAll(".page-shell > div").forEach(function(div){div.style.minHeight="0";var h=div.scrollHeight;if(h>0&&h<816){var scale=816/h;var w=Math.round(1056/scale);div.style.width=w+"px";div.style.height=h+"px";div.style.transformOrigin="top left";div.style.transform="scale("+scale.toFixed(4)+")";div.parentElement.style.height="816px";div.parentElement.style.overflow="hidden";div.parentElement.style.width="1056px";}});});<\/script></body></html>');
   win.document.close();
 }
 
