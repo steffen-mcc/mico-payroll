@@ -293,16 +293,41 @@ html,body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Sego
   <!-- Report Info -->
   <div class="card">
     <div class="card-title">Report Information</div>
-    <div class="form-grid form-grid-2" style="margin-bottom:16px">
-      <div class="form-group">
-        <label>Contract / Agency *</label>
-        <select id="rf-contract" onchange="onContractChange()">
-          <option value="">-- Select Contract --</option>
-        </select>
+    <!-- Report mode toggle -->
+    <div style="display:flex;margin-bottom:16px;border:1px solid var(--silver-light);border-radius:var(--radius-sm);overflow:hidden;width:fit-content">
+      <button type="button" id="rf-mode-btn-contract" onclick="setReportMode('contract')" style="padding:7px 20px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border:none;cursor:pointer;background:var(--navy);color:white">Saved Contract</button>
+      <button type="button" id="rf-mode-btn-adhoc" onclick="setReportMode('adhoc')" style="padding:7px 20px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border:none;cursor:pointer;background:var(--gray-100);color:var(--gray-500)">One-off / Manual</button>
+    </div>
+    <!-- Saved contract fields -->
+    <div id="rf-fields-contract">
+      <div class="form-grid form-grid-2" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Contract / Agency *</label>
+          <select id="rf-contract" onchange="onContractChange()">
+            <option value="">-- Select Contract --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Invoice Number *</label>
+          <input type="text" id="rf-invoice" placeholder="e.g. 246325">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Base Invoice Number *</label>
-        <input type="text" id="rf-invoice" placeholder="e.g. 246325">
+    </div>
+    <!-- One-off manual fields -->
+    <div id="rf-fields-adhoc" style="display:none">
+      <div class="form-grid form-grid-3" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Facility *</label>
+          <input type="text" id="rf-manual-facility" placeholder="e.g. HARLEM">
+        </div>
+        <div class="form-group">
+          <label>PO Number *</label>
+          <input type="text" id="rf-manual-po" placeholder="e.g. COF0020710">
+        </div>
+        <div class="form-group">
+          <label>Invoice Number *</label>
+          <input type="text" id="rf-invoice-adhoc" placeholder="e.g. 246325">
+        </div>
       </div>
     </div>
     <div class="form-grid form-grid-3" style="margin-bottom:16px">
@@ -592,7 +617,7 @@ const escHtml = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&l
 let db;
 let state = {
   employees: [], contracts: [], reports: [], unionClasses: [], ratePeriods: [],
-  currentReportId: null,
+  currentReportId: null, reportMode: 'contract',
   currentView: 'reports', entryCount: 0, pendingDelete: null
 };
 let currentRPCode = null;
@@ -973,9 +998,9 @@ function renderReports() {
     return `<tr>
       <td><strong>${escHtml(r.invoice_number)}</strong></td>
       <td style="font-size:12px">${dateRange}</td>
-      <td>${escHtml(c.agency||'—')}</td>
-      <td>${escHtml(c.facility||'—')}</td>
-      <td>${escHtml(c.contract_number||'—')}</td>
+      <td>${escHtml(c.agency || '—')}</td>
+      <td>${escHtml(c.facility || r.manual_facility || '—')}</td>
+      <td>${escHtml(c.contract_number || r.manual_po_number || '—')}</td>
       <td><div class="actions">
         <button class="btn btn-charcoal btn-sm" onclick="editReport('${escHtml(r.id)}')">Edit</button>
         <button class="btn btn-charcoal btn-sm" onclick="openReportPDF('${escHtml(r.id)}')">Export PDF</button>
@@ -1002,6 +1027,10 @@ function openReportForm(reportId) {
   document.getElementById('rf-date-to').value = '';
   document.getElementById('rf-week-summary').style.display = 'none';
   document.getElementById('rf-contract-preview').style.display = 'none';
+  document.getElementById('rf-manual-facility').value = '';
+  document.getElementById('rf-manual-po').value = '';
+  document.getElementById('rf-invoice-adhoc').value = '';
+  setReportMode('contract');
   document.getElementById('rf-employees-list').innerHTML = '';
   state.entryCount = 0;
   const sel = document.getElementById('rf-contract');
@@ -1019,8 +1048,16 @@ async function editReport(id) {
   openReportForm(id);
   const report = state.reports.find(r => r.id === id);
   if (report) {
-    document.getElementById('rf-contract').value = report.contract_id || '';
-    document.getElementById('rf-invoice').value = report.invoice_number;
+    if (!report.contract_id && (report.manual_facility || report.manual_po_number)) {
+      setReportMode('adhoc');
+      document.getElementById('rf-manual-facility').value = report.manual_facility || '';
+      document.getElementById('rf-manual-po').value = report.manual_po_number || '';
+      document.getElementById('rf-invoice-adhoc').value = report.invoice_number || '';
+    } else {
+      setReportMode('contract');
+      document.getElementById('rf-contract').value = report.contract_id || '';
+      document.getElementById('rf-invoice').value = report.invoice_number;
+    }
     // Restore full date range (date_from → week_ending)
     const dateFrom = report.date_from || (() => {
       const fri = new Date(report.week_ending + 'T00:00:00');
@@ -1069,6 +1106,20 @@ async function editReport(id) {
     });
     addEmployeeEntry(empEntries[0], hoursMap);
   });
+}
+
+function setReportMode(mode) {
+  state.reportMode = mode;
+  const isAdhoc = mode === 'adhoc';
+  document.getElementById('rf-fields-contract').style.display = isAdhoc ? 'none' : '';
+  document.getElementById('rf-fields-adhoc').style.display    = isAdhoc ? '' : 'none';
+  if (!isAdhoc) document.getElementById('rf-contract-preview').style.display = 'none';
+  const btnC = document.getElementById('rf-mode-btn-contract');
+  const btnA = document.getElementById('rf-mode-btn-adhoc');
+  btnC.style.background = isAdhoc ? 'var(--gray-100)' : 'var(--navy)';
+  btnC.style.color      = isAdhoc ? 'var(--gray-500)' : 'white';
+  btnA.style.background = isAdhoc ? 'var(--navy)' : 'var(--gray-100)';
+  btnA.style.color      = isAdhoc ? 'white' : 'var(--gray-500)';
 }
 
 function onContractChange() {
@@ -1269,11 +1320,18 @@ function collectEntries() {
 
 // ===================== SAVE REPORT =====================
 async function saveReport() {
-  const contractId = document.getElementById('rf-contract').value;
-  const invoice    = document.getElementById('rf-invoice').value.trim();
+  const isAdhoc    = state.reportMode === 'adhoc';
+  const contractId = isAdhoc ? null : document.getElementById('rf-contract').value;
+  const invoice    = isAdhoc
+    ? document.getElementById('rf-invoice-adhoc').value.trim()
+    : document.getElementById('rf-invoice').value.trim();
+  const manualFacility = isAdhoc ? document.getElementById('rf-manual-facility').value.trim() : null;
+  const manualPo       = isAdhoc ? document.getElementById('rf-manual-po').value.trim() : null;
   const dateFrom   = document.getElementById('rf-date-from').value;
   const dateTo     = document.getElementById('rf-date-to').value;
-  if (!contractId)          { toast('Please select a contract','error'); return; }
+  if (!isAdhoc && !contractId) { toast('Please select a contract','error'); return; }
+  if (isAdhoc && !manualFacility) { toast('Please enter a facility','error'); return; }
+  if (isAdhoc && !manualPo)       { toast('Please enter a PO number','error'); return; }
   if (!invoice)             { toast('Please enter an invoice number','error'); return; }
   if (!dateFrom || !dateTo) { toast('Please enter a date range','error'); return; }
   const dates = getDatesInRange(dateFrom, dateTo);
@@ -1288,7 +1346,8 @@ async function saveReport() {
     date_from:      dateFrom,
     week_ending:    lastFriday,
     inv_date:       lastFriday,
-    payroll_number: weeks.length
+    payroll_number: weeks.length,
+    ...(isAdhoc ? { manual_facility: manualFacility, manual_po_number: manualPo } : { manual_facility: null, manual_po_number: null })
   };
 
   let reportId;
@@ -1543,6 +1602,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
   ];
   const shortDate = d => `${d.getMonth()+1}/${d.getDate()}`;
   const c = contract || {};
+  const contractNum = c.contract_number || report.manual_po_number || '';
+  const facilityVal = c.facility || report.manual_facility || '';
 
   // 22-column table: col 1 = row number, cols 2-22 = data
   const B  = 'border:1px solid #000;';
@@ -1651,8 +1712,8 @@ function buildFormHTML(report, contract, entries, pageNum, totalPages) {
     <tr>
       ${rn(5)}
       <td colspan="7" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.contractor_name||'Mico Cooling Corp.'}</td>
-      <td colspan="5" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.contract_number||''}</td>
-      <td colspan="5" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.facility||''}</td>
+      <td colspan="5" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${contractNum}</td>
+      <td colspan="5" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${facilityVal}</td>
       <td colspan="6" style="border:1px solid #000;border-top:none;padding:3px;font-size:8px">${c.project_number||''}</td>
     </tr>
     <!-- Row 6 -->
@@ -1748,9 +1809,12 @@ async function openReportPDF(id) {
   // Group entries by week_number, preserving order
   const weekNums = [...new Set(allEntries.map(e => e.week_number || 1))].sort((a,b) => a-b);
   // If no week_number (legacy record), treat all as week 1
-  const weekGroups = weekNums.length
-    ? weekNums.map(wn => allEntries.filter(e => (e.week_number||1) === wn))
-    : [allEntries];
+  const _days = ['sat','sun','mon','tue','wed','thu','fri'];
+  const hasHours = e => _days.some(d => parseFloat(e[d+'_rt']||0) > 0 || parseFloat(e[d+'_ot']||0) > 0);
+  const weekGroups = (weekNums.length
+    ? weekNums.map(wn => allEntries.filter(e => (e.week_number||1) === wn).filter(hasHours))
+    : [allEntries.filter(hasHours)]
+  ).filter(wg => wg.length > 0);
   const totalWeeks = weekGroups.length;
 
   // Build per-week pages, splitting into pages of 8 employees each
@@ -1785,6 +1849,7 @@ async function openReportPDF(id) {
 
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=1056">
 <title>Payroll Report — ${report.invoice_number}</title>
 <style>
   @page { size: letter landscape; margin: 0; }
@@ -1809,9 +1874,8 @@ async function openReportPDF(id) {
   @media print {
     .print-bar { display: none !important; }
     body { background: white; }
-    .pages-wrap { padding: 0; }
+    .pages-wrap { padding: 0; align-items: stretch; }
     .page-shell { margin: 0; border-radius: 0; box-shadow: none; }
-    @page { size: letter landscape; margin: 0; }
   }
 </style>
 </head><body>
