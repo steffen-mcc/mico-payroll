@@ -1395,7 +1395,7 @@ async function saveReport() {
     if (eErr) { toast('Error saving entries: ' + eErr.message, 'error'); return; }
   }
 
-  state.currentReportId = rec.id;
+  state.currentReportId = reportId;
   const wkLabel = weeks.length > 1 ? `${weeks.length} weeks` : '1 week';
   toast(`Report saved — ${wkLabel}`, 'success');
   await loadReports();
